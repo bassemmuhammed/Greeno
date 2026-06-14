@@ -97,3 +97,16 @@ export const ORDER_STEPS = [
 
 // Demo auto-advance timings (ms). Replace with realtime updates when backend is ready.
 export const STEP_DURATIONS = [4000, 8000, 8000];
+
+const DAY_LABELS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+export const INITIAL_HOURS = DAY_LABELS.map((day) => ({ day, open: "08:00", close: "23:00", closed: false }));
+
+export const INITIAL_SETTINGS = {
+  restaurantName: RESTAURANT_CONFIG.name,
+  tagline:        RESTAURANT_CONFIG.tagline,
+  whatsappNumber: RESTAURANT_CONFIG.whatsapp,
+  deliveryFee:    RESTAURANT_CONFIG.deliveryFee,
+  minOrder:       RESTAURANT_CONFIG.minOrder,
+  deliveryTime:   RESTAURANT_CONFIG.deliveryTime,
+};

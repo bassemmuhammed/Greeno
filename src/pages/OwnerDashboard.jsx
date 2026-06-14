@@ -1,24 +1,12 @@
 import { useState } from "react";
 import { Leaf, TrendingUp, Package, ShoppingBag, Settings, Star, LogOut, Plus } from "lucide-react";
-import { MENU_ITEMS, MOCK_ORDERS, WEEKLY_SALES, RESTAURANT_CONFIG, DAILY_SPECIAL } from "../data/menuData";
+import { MENU_ITEMS, MOCK_ORDERS, WEEKLY_SALES, RESTAURANT_CONFIG, DAILY_SPECIAL, INITIAL_HOURS, INITIAL_SETTINGS } from "../data/menuData";
 import { StatCard, MiniBarChart, StatusToggleCard } from "../components/owner/StatsWidgets";
 import { ItemEditor, MenuItemRow, DailySpecialEditor } from "../components/owner/MenuManagement";
 import { OrderRow } from "../components/owner/OrderRow";
 import { SettingsPanel } from "../components/owner/SettingsPanel";
 
 const INITIAL_CATEGORIES = ["Salads", "Bowls", "Smoothies", "Treats"];
-const DAY_LABELS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-
-const INITIAL_HOURS = DAY_LABELS.map((day) => ({ day, open: "08:00", close: "23:00", closed: false }));
-
-const INITIAL_SETTINGS = {
-  restaurantName: RESTAURANT_CONFIG.name,
-  tagline:        RESTAURANT_CONFIG.tagline,
-  whatsappNumber: RESTAURANT_CONFIG.whatsapp,
-  deliveryFee:    RESTAURANT_CONFIG.deliveryFee,
-  minOrder:       RESTAURANT_CONFIG.minOrder,
-  deliveryTime:   RESTAURANT_CONFIG.deliveryTime,
-};
 
 const TABS = [
   { id: "overview", label: "Overview",  icon: TrendingUp },
