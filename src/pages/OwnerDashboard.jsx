@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Leaf, TrendingUp, Package, ShoppingBag, Settings, Star, LogOut, Plus, RefreshCw, AlertCircle } from "lucide-react";
 import { WEEKLY_SALES } from "../data/menuData";
 import { useMenuItems, useOrders, useSettings } from "../hooks/useSupabase";
@@ -37,6 +38,12 @@ function ErrorBanner({ message }) {
 }
 
 export default function OwnerDashboard() {
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    sessionStorage.removeItem("greeno_admin");
+    navigate("/login");
+  };
+
   const { items, loading: itemsLoading, error: itemsError, saveItem, deleteItem, toggleAvailable } = useMenuItems();
   const { orders, loading: ordersLoading, error: ordersError, updateStatus } = useOrders();
   const { settings, loading: settingsLoading, error: settingsError, saveSettings } = useSettings();
@@ -97,7 +104,7 @@ export default function OwnerDashboard() {
               </h1>
             </div>
           </div>
-          <button className="w-9 h-9 rounded-full flex items-center justify-center border" style={{ borderColor: "#E4E0D4" }}>
+          <button onClick={handleLogout} className="w-9 h-9 rounded-full flex items-center justify-center border" style={{ borderColor: "#E4E0D4" }}>
             <LogOut className="w-4 h-4" style={{ color: "#6B6557" }} strokeWidth={2.5} />
           </button>
         </div>
