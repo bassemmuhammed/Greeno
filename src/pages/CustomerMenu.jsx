@@ -146,6 +146,13 @@ export default function CustomerMenu() {
   const { cart, addToCart, inc, dec, clear, totalItems, totalPrice } = useCart();
   const { phone, setPhone, address, setAddress, note, setNote, orderCount, incrementOrders } = useCustomer();
 
+  // Lock body scroll when any modal/sheet is open
+  useEffect(() => {
+    const locked = showOrder || showTracker || showStory;
+    document.body.style.overflow = locked ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [showOrder, showTracker, showStory]);
+
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchTerm,     setSearchTerm]     = useState("");
   const [showOrder,      setShowOrder]      = useState(false);
@@ -191,14 +198,14 @@ export default function CustomerMenu() {
   const restaurantName = config.restaurantName || "greenó";
   const tagline        = config.tagline        || "Eat Clean. Live Green.";
   const deliveryTime   = config.deliveryTime   || "30–45 min";
-  const categories     = ["All", "Favorites ❤️", ...(config.categories || ["Salads", "Bowls", "Smoothies", "Treats"])];
+  const categories     = ["All", "Favorites", ...(config.categories || ["Salads", "Bowls", "Smoothies", "Treats"])];
 
   const allItems    = items.length > 0 ? items : [];
   const specialItem = allItems.find((i) => i.isSpecial) || DAILY_SPECIAL;
   const menuItems   = allItems.filter((i) => !i.isSpecial);
 
   const filteredItems = menuItems.filter((item) => {
-    if (activeCategory === "Favorites ❤️") return favorites.includes(item.id);
+    if (activeCategory === "Favorites") return favorites.includes(item.id);
     const matchesCat    = activeCategory === "All" || item.category === activeCategory;
     const matchesSearch = !searchTerm.trim() ||
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
