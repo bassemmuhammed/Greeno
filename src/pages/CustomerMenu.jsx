@@ -66,11 +66,17 @@ function StoryViewer({ images, onClose }) {
       </button>
 
       {/* Image */}
-      <div className="flex-1 relative flex items-center justify-center">
+      <div className="flex-1 relative flex items-center justify-center" style={{ backgroundColor: "#000" }}>
         <img
           src={images[current]}
           alt={`story-${current}`}
-          className="w-full h-full object-cover"
+          style={{
+            maxWidth: "100%",
+            maxHeight: "100%",
+            width: "auto",
+            height: "auto",
+            objectFit: "contain",
+          }}
         />
         {/* Tap zones */}
         <div className="absolute inset-0 flex">
@@ -88,33 +94,37 @@ function StoryCircle({ onOpenStory, hasStory }) {
     <button
       onClick={onOpenStory}
       className="relative flex items-center justify-center focus:outline-none"
-      style={{ width: 64, height: 64 }}
+      style={{ width: 72, height: 72, borderRadius: "50%" }}
     >
-      {/* Gradient ring if has story */}
-      {hasStory ? (
+      {/* Gradient ring */}
+      {hasStory && (
         <div
-          className="absolute inset-0 rounded-full"
           style={{
-            background: "linear-gradient(135deg, #8FA888, #1F2A1E, #5a7a5a)",
-            padding: 2,
+            position: "absolute",
+            inset: 0,
             borderRadius: "50%",
+            background: "linear-gradient(135deg, #8FA888 0%, #1F2A1E 50%, #D98B5F 100%)",
+            padding: 3,
           }}
         >
-          <div
-            className="w-full h-full rounded-full flex items-center justify-center"
-            style={{ backgroundColor: "#1F2A1E" }}
-          >
-            <Leaf className="w-7 h-7 text-white" strokeWidth={2} />
-          </div>
-        </div>
-      ) : (
-        <div
-          className="w-full h-full rounded-full flex items-center justify-center"
-          style={{ backgroundColor: "#1F2A1E" }}
-        >
-          <Leaf className="w-7 h-7 text-white" strokeWidth={2} />
+          {/* White gap between ring and icon */}
+          <div style={{ width: "100%", height: "100%", borderRadius: "50%", backgroundColor: "#FAF7F0" }} />
         </div>
       )}
+      {/* Icon circle */}
+      <div
+        style={{
+          position: "absolute",
+          inset: hasStory ? 5 : 0,
+          borderRadius: "50%",
+          backgroundColor: "#1F2A1E",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Leaf style={{ width: 26, height: 26, color: "#fff" }} strokeWidth={2} />
+      </div>
     </button>
   );
 }
