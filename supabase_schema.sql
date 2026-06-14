@@ -1,39 +1,43 @@
 -- ============================================================
--- greenó — Supabase Schema
--- Run this in: Supabase Dashboard → SQL Editor → New Query
+-- greenó — Supabase Schema  (run full file in SQL Editor)
 -- ============================================================
 
+-- Drop old tables if they exist (clean slate)
+drop table if exists orders     cascade;
+drop table if exists menu_items cascade;
+drop table if exists settings   cascade;
+
 -- 1. MENU ITEMS
-create table if not exists menu_items (
-  id          serial primary key,
-  name        text not null,
-  description text,
-  price       numeric not null,
-  cal         int,
-  tags        text[]    default '{}',
-  color       text      default '#8FA888',
-  category    text      not null,
-  available   boolean   default true,
-  is_special  boolean   default false,
+create table menu_items (
+  id             serial primary key,
+  name           text    not null,
+  description    text,
+  price          numeric not null,
+  cal            int,
+  tags           text[]  default '{}',
+  color          text    default '#8FA888',
+  category       text    not null,
+  available      boolean default true,
+  is_special     boolean default false,
   original_price numeric,
-  sold        int       default 0,
-  created_at  timestamptz default now()
+  sold           int     default 0,
+  created_at     timestamptz default now()
 );
 
 -- 2. ORDERS
-create table if not exists orders (
-  id          serial primary key,
-  items_text  text not null,
-  total       numeric not null,
-  status      text not null default 'Preparing',
-  phone       text,
-  address     text,
-  note        text,
-  created_at  timestamptz default now()
+create table orders (
+  id         serial primary key,
+  items_text text    not null,
+  total      numeric not null,
+  status     text    not null default 'Preparing',
+  phone      text,
+  address    text,
+  note       text,
+  created_at timestamptz default now()
 );
 
--- 3. SETTINGS (single row)
-create table if not exists settings (
+-- 3. SETTINGS (single-row table)
+create table settings (
   id              int primary key default 1,
   restaurant_name text    default 'greenó',
   tagline         text    default 'Eat Clean. Live Green.',
@@ -47,38 +51,30 @@ create table if not exists settings (
   updated_at      timestamptz default now()
 );
 
--- 4. Insert default settings row
-insert into settings (id) values (1)
-on conflict (id) do nothing;
+-- Insert default settings row
+insert into settings (id) values (1);
 
--- 5. Seed menu items
-insert into menu_items (name, description, price, cal, tags, color, category, available, sold) values
-  ('Grilled Quinoa Bowl',    'Quinoa, avocado, roasted chickpeas, cherry tomatoes, lemon-tahini dressing', 145, 420, '{Vegan,"High Protein"}',     '#8FA888', 'Bowls',     true,  0),
-  ('Grilled Salmon Salad',   'Norwegian salmon, mixed greens, fennel, quinoa, dill sauce',                 195, 380, '{Omega-3,"Low Carb"}',       '#D98B5F', 'Salads',    true,  0),
-  ('Green Detox Juice',      'Spinach, green apple, cucumber, mint, ginger, lemon',                        65,  110, '{Detox,"Sugar Free"}',       '#8FA888', 'Smoothies', true,  0),
-  ('Citrus Avocado Salad',   'Mixed leaves, orange segments, avocado, toasted almonds, citrus vinaigrette',130, 310, '{Vegan,"Gluten Free"}',      '#D98B5F', 'Salads',    true,  0),
-  ('Mango Protein Smoothie', 'Mango, banana, almond milk, plant protein, chia seeds',                      80,  240, '{"High Protein",Vegan}',     '#8FA888', 'Smoothies', true,  0),
-  ('Energy Date Bites',      'Dates, almonds, oats, cacao, shredded coconut',                              55,  160, '{"No Sugar Added",Vegan}',   '#D98B5F', 'Treats',    false, 0),
-  ('Buddha Bowl',            'Roasted sweet potato, kale, edamame, brown rice, peanut-ginger sauce',      120, 450, '{Vegan,"Today Only"}',       '#D98B5F', 'Bowls',     true,  0)
-on conflict do nothing;
+-- 4. Seed menu items (is_special included in insert directly)
+insert into menu_items (name, description, price, cal, tags, color, category, available, is_special, original_price, sold) values
+  ('Grilled Quinoa Bowl',    'Quinoa, avocado, roasted chickpeas, cherry tomatoes, lemon-tahini dressing', 145, 420, '{Vegan,"High Protein"}',   '#8FA888', 'Bowls',     true,  false, null, 0),
+  ('Grilled Salmon Salad',   'Norwegian salmon, mixed greens, fennel, quinoa, dill sauce',                 195, 380, '{Omega-3,"Low Carb"}',     '#D98B5F', 'Salads',    true,  false, null, 0),
+  ('Green Detox Juice',      'Spinach, green apple, cucumber, mint, ginger, lemon',                        65,  110, '{Detox,"Sugar Free"}',     '#8FA888', 'Smoothies', true,  false, null, 0),
+  ('Citrus Avocado Salad',   'Mixed leaves, orange segments, avocado, toasted almonds, citrus vinaigrette',130, 310, '{Vegan,"Gluten Free"}',    '#D98B5F', 'Salads',    true,  false, null, 0),
+  ('Mango Protein Smoothie', 'Mango, banana, almond milk, plant protein, chia seeds',                      80,  240, '{"High Protein",Vegan}',   '#8FA888', 'Smoothies', true,  false, null, 0),
+  ('Energy Date Bites',      'Dates, almonds, oats, cacao, shredded coconut',                              55,  160, '{"No Sugar Added",Vegan}', '#D98B5F', 'Treats',    false, false, null, 0),
+  ('Buddha Bowl',            'Roasted sweet potato, kale, edamame, brown rice, peanut-ginger sauce',      120, 450, '{Vegan,"Today Only"}',     '#D98B5F', 'Bowls',     true,  true,  150,  0);
 
--- Mark Buddha Bowl as daily special
-update menu_items set is_special = true, original_price = 150 where name = 'Buddha Bowl';
-
--- 6. RLS Policies
+-- 5. RLS Policies
 alter table menu_items enable row level security;
 alter table orders     enable row level security;
 alter table settings   enable row level security;
 
--- menu_items: anyone can read, anyone can write (owner uses same frontend for now)
 create policy "read menu"   on menu_items for select using (true);
 create policy "write menu"  on menu_items for all    using (true) with check (true);
 
--- orders: anyone can insert + read (customer places, owner reads)
 create policy "read orders"   on orders for select using (true);
 create policy "insert orders" on orders for insert with check (true);
 create policy "update orders" on orders for update using (true) with check (true);
 
--- settings: anyone can read + update
 create policy "read settings"   on settings for select using (true);
 create policy "update settings" on settings for update using (true) with check (true);
