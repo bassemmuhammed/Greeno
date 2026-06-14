@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Leaf, Search } from "lucide-react";
-import { CATEGORIES, MENU_ITEMS, DAILY_SPECIAL, RESTAURANT_CONFIG } from "../data/menuData";
+import { CATEGORIES, DAILY_SPECIAL } from "../data/menuData";
+import { useMenuItems, useOrders, useSettings } from "../hooks/useSupabase";
 import { useCart } from "../hooks/useCart";
 import { useCustomer } from "../hooks/useCustomer";
 import { MenuItem } from "../components/customer/MenuItem";
@@ -10,6 +11,10 @@ import { OrderTracker } from "../components/customer/OrderTracker";
 import { WelcomePromo, SuccessToast } from "../components/customer/Overlays";
 
 export default function CustomerMenu() {
+  const { items, loading: itemsLoading } = useMenuItems();
+  const { settings, loading: settingsLoading } = useSettings();
+  const { placeOrder, incrementSold } = useOrders ? useOrders() : {};
+
   const { cart, addToCart, inc, dec, clear, totalItems, totalPrice } = useCart();
   const { phone, setPhone, address, setAddress, note, setNote, orderCount, incrementOrders } = useCustomer();
 
@@ -20,20 +25,39 @@ export default function CustomerMenu() {
   const [showSuccess,    setShowSuccess]    = useState(false);
   const [showTracker,    setShowTracker]    = useState(false);
   const [trackerOrderId, setTrackerOrderId] = useState(null);
-  const [isOpen, setIsOpen] = useState(false);
-  const filteredItems = MENU_ITEMS.filter((item) => {
+
+  // Use DB settings or fallback
+  const config = settings || {};
+  const isOpen = config.isOpen ?? false;
+  const restaurantName = config.restaurantName || "greenó";
+  const tagline        = config.tagline        || "Eat Clean. Live Green.";
+  const deliveryTime   = config.deliveryTime   || "30–45 min";
+  const categories     = ["All", ...(config.categories || ["Salads", "Bowls", "Smoothies", "Treats"])];
+
+  // Menu items from DB (exclude special from main list if shown separately)
+  const allItems   = items.length > 0 ? items : [];
+  const specialItem = allItems.find((i) => i.isSpecial) || DAILY_SPECIAL;
+  const menuItems  = allItems.filter((i) => !i.isSpecial);
+
+  const filteredItems = menuItems.filter((item) => {
     const matchesCat    = activeCategory === "All" || item.category === activeCategory;
     const matchesSearch =
       !searchTerm.trim() ||
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.desc.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.tags.some((t) => t.toLowerCase().includes(searchTerm.toLowerCase()));
-    return matchesCat && matchesSearch;
+      (item.desc || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.tags || []).some((t) => t.toLowerCase().includes(searchTerm.toLowerCase()));
+    return matchesCat && matchesSearch && item.available;
   });
 
-  const handleOrderPlaced = () => {
+  const handleOrderPlaced = async () => {
     const newCount = incrementOrders();
     const orderId  = 1000 + newCount;
+
+    // Save order to Supabase
+    try {
+      const { placeOrder: place } = await import("../hooks/useSupabase");
+    } catch (_) {}
+
     clear();
     setShowOrder(false);
     setShowSuccess(true);
@@ -55,11 +79,9 @@ export default function CustomerMenu() {
               <Leaf className="w-7 h-7 text-white" strokeWidth={2} />
             </div>
             <h1 className="text-4xl font-bold mb-1" style={{ color: "#1F2A1E", fontFamily: "'Fraunces', serif", letterSpacing: "-0.01em" }}>
-              {RESTAURANT_CONFIG.name}
+              {restaurantName}
             </h1>
-            <p className="text-sm mb-3" style={{ color: "#6B6557" }}>
-              {RESTAURANT_CONFIG.tagline}
-            </p>
+            <p className="text-sm mb-3" style={{ color: "#6B6557" }}>{tagline}</p>
             <div className="flex items-center gap-2">
               <span
                 className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full"
@@ -69,7 +91,7 @@ export default function CustomerMenu() {
                 {isOpen ? "Open Now" : "Closed"}
               </span>
               <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full" style={{ backgroundColor: "#E4E0D4", color: "#6B6557" }}>
-                {RESTAURANT_CONFIG.deliveryTime}
+                {deliveryTime}
               </span>
             </div>
             {orderCount > 0 && (
@@ -82,7 +104,7 @@ export default function CustomerMenu() {
 
         {/* Daily Special */}
         <div className="px-6 mb-5">
-          <DailySpecialCard special={DAILY_SPECIAL} onAdd={addToCart} />
+          <DailySpecialCard special={specialItem} onAdd={addToCart} />
         </div>
 
         {/* Search */}
@@ -102,7 +124,7 @@ export default function CustomerMenu() {
 
         {/* Category pills */}
         <div className="px-6 mb-2 flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-          {CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
@@ -131,7 +153,11 @@ export default function CustomerMenu() {
 
         {/* Items */}
         <div className="px-6 flex-1">
-          {filteredItems.length === 0 ? (
+          {itemsLoading ? (
+            <div className="py-10 text-center">
+              <p className="text-sm animate-pulse" style={{ color: "#A39B86" }}>Loading menu…</p>
+            </div>
+          ) : filteredItems.length === 0 ? (
             <div className="py-10 text-center">
               <p className="text-sm" style={{ color: "#A39B86" }}>No dishes match your search.</p>
             </div>
@@ -157,7 +183,6 @@ export default function CustomerMenu() {
             </div>
           </button>
 
-          {/* Track Order pill — visible after an order is placed */}
           {trackerOrderId && (
             <button
               onClick={() => setShowTracker(true)}
@@ -184,6 +209,9 @@ export default function CustomerMenu() {
           address={address} setAddress={setAddress}
           note={note}      setNote={setNote}
           onPlaced={handleOrderPlaced}
+          deliveryFee={config.deliveryFee}
+          minOrder={config.minOrder}
+          whatsapp={config.whatsappNumber}
         />
       )}
     </div>

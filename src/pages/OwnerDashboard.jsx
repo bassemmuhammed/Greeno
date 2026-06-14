@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { Leaf, TrendingUp, Package, ShoppingBag, Settings, Star, LogOut, Plus } from "lucide-react";
-import { MENU_ITEMS, MOCK_ORDERS, WEEKLY_SALES, RESTAURANT_CONFIG, DAILY_SPECIAL, INITIAL_HOURS, INITIAL_SETTINGS } from "../data/menuData";
+import { Leaf, TrendingUp, Package, ShoppingBag, Settings, Star, LogOut, Plus, RefreshCw, AlertCircle } from "lucide-react";
+import { WEEKLY_SALES } from "../data/menuData";
+import { useMenuItems, useOrders, useSettings } from "../hooks/useSupabase";
 import { StatCard, MiniBarChart, StatusToggleCard } from "../components/owner/StatsWidgets";
 import { ItemEditor, MenuItemRow, DailySpecialEditor } from "../components/owner/MenuManagement";
 import { OrderRow } from "../components/owner/OrderRow";
 import { SettingsPanel } from "../components/owner/SettingsPanel";
-
-const INITIAL_CATEGORIES = ["Salads", "Bowls", "Smoothies", "Treats"];
 
 const TABS = [
   { id: "overview", label: "Overview",  icon: TrendingUp },
@@ -20,34 +19,61 @@ const NEW_ITEM_TEMPLATE = {
   tags: [], category: "Salads", color: "#8FA888", sold: 0, available: true,
 };
 
+function LoadingSpinner() {
+  return (
+    <div className="flex items-center justify-center py-12">
+      <RefreshCw className="w-6 h-6 animate-spin" style={{ color: "#A39B86" }} />
+    </div>
+  );
+}
+
+function ErrorBanner({ message }) {
+  return (
+    <div className="flex items-center gap-2 px-4 py-3 rounded-xl mb-4" style={{ backgroundColor: "#FFF3EE", border: "1px solid #D98B5F" }}>
+      <AlertCircle className="w-4 h-4 shrink-0" style={{ color: "#D98B5F" }} />
+      <p className="text-xs" style={{ color: "#D98B5F" }}>{message}</p>
+    </div>
+  );
+}
+
 export default function OwnerDashboard() {
-  const [items,       setItems]       = useState(MENU_ITEMS.map((i) => ({ ...i, sold: Math.floor(Math.random() * 50) + 10 })));
-  const [categories,  setCategories]  = useState(INITIAL_CATEGORIES);
-  const [orders,      setOrders]      = useState(MOCK_ORDERS);
-  const [isOpen,      setIsOpen]      = useState(true);
+  const { items, loading: itemsLoading, error: itemsError, saveItem, deleteItem, toggleAvailable } = useMenuItems();
+  const { orders, loading: ordersLoading, error: ordersError, updateStatus } = useOrders();
+  const { settings, loading: settingsLoading, error: settingsError, saveSettings } = useSettings();
+
   const [activeTab,   setActiveTab]   = useState("overview");
   const [editingItem, setEditingItem] = useState(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
-  const [special,     setSpecial]     = useState({ itemId: 1, price: 120, originalPrice: 150 });
-  const [hours,       setHours]       = useState(INITIAL_HOURS);
-  const [settings,    setSettings]    = useState(INITIAL_SETTINGS);
+  const [saveError,   setSaveError]   = useState(null);
+
+  const categories = settings.categories || ["Salads", "Bowls", "Smoothies", "Treats"];
+  const isOpen     = settings.isOpen ?? true;
 
   // Overview metrics
-  const totalSalesToday  = orders.reduce((s, o) => s + o.total, 0);
-  const avgOrder         = Math.round(totalSalesToday / orders.length);
-  const weekTotal        = WEEKLY_SALES.reduce((a, b) => a + b, 0);
-  const topItem          = [...items].sort((a, b) => b.sold - a.sold)[0];
+  const totalSalesToday = orders.reduce((s, o) => s + o.total, 0);
+  const avgOrder        = orders.length ? Math.round(totalSalesToday / orders.length) : 0;
+  const weekTotal       = WEEKLY_SALES.reduce((a, b) => a + b, 0);
+  const topItem         = [...items].sort((a, b) => (b.sold || 0) - (a.sold || 0))[0];
+  const special         = items.find((i) => i.isSpecial);
 
-  // Menu handlers
-  const handleSaveItem = (draft) => {
-    if (isAddingNew) {
-      const newId = Math.max(0, ...items.map((i) => i.id)) + 1;
-      setItems([...items, { ...draft, id: newId, sold: 0, color: "#8FA888" }]);
+  const handleSaveItem = async (draft) => {
+    setSaveError(null);
+    try {
+      await saveItem(draft);
+      setEditingItem(null);
       setIsAddingNew(false);
-    } else {
-      setItems(items.map((i) => (i.id === draft.id ? draft : i)));
+    } catch (e) {
+      setSaveError(e.message);
     }
-    setEditingItem(null);
+  };
+
+  const handleSaveSettings = async (patch) => {
+    setSaveError(null);
+    try {
+      await saveSettings(patch);
+    } catch (e) {
+      setSaveError(e.message);
+    }
   };
 
   return (
@@ -102,11 +128,18 @@ export default function OwnerDashboard() {
           {/* ─── Overview ─── */}
           {activeTab === "overview" && (
             <div className="flex flex-col gap-4">
-              <StatusToggleCard isOpen={isOpen} onToggle={() => setIsOpen((v) => !v)} />
+              {settingsLoading ? <LoadingSpinner /> : (
+                <StatusToggleCard
+                  isOpen={isOpen}
+                  onToggle={() => handleSaveSettings({ isOpen: !isOpen })}
+                />
+              )}
+
+              {ordersError && <ErrorBanner message="Using sample orders — couldn't reach database." />}
 
               <div className="flex gap-3">
                 <StatCard label="TODAY'S SALES" value={`${totalSalesToday} EGP`} sub={`${orders.length} orders`} icon={TrendingUp} />
-                <StatCard label="AVG ORDER"     value={`${avgOrder} EGP`}         sub="per order"                icon={ShoppingBag} />
+                <StatCard label="AVG ORDER"     value={`${avgOrder} EGP`}        sub="per order"                icon={ShoppingBag} />
               </div>
 
               <div className="rounded-2xl p-4" style={{ backgroundColor: "#FFFFFF", border: "1px solid #E4E0D4" }}>
@@ -119,31 +152,47 @@ export default function OwnerDashboard() {
                 <MiniBarChart data={WEEKLY_SALES} />
               </div>
 
-              <div className="rounded-2xl p-4 flex items-center gap-3" style={{ backgroundColor: "#FFFFFF", border: "1px solid #E4E0D4" }}>
-                <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#FAF7F0" }}>
-                  <Star className="w-4 h-4" style={{ color: "#D98B5F" }} strokeWidth={2.5} />
+              {topItem && (
+                <div className="rounded-2xl p-4 flex items-center gap-3" style={{ backgroundColor: "#FFFFFF", border: "1px solid #E4E0D4" }}>
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#FAF7F0" }}>
+                    <Star className="w-4 h-4" style={{ color: "#D98B5F" }} strokeWidth={2.5} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold tracking-[0.15em] mb-0.5" style={{ color: "#A39B86" }}>TOP SELLER THIS WEEK</p>
+                    <p className="text-sm font-bold leading-snug" style={{ color: "#1F2A1E", fontFamily: "'Fraunces', serif" }}>
+                      {topItem.name}
+                    </p>
+                  </div>
+                  <span className="text-sm font-bold tabular-nums shrink-0" style={{ color: "#1F2A1E" }}>
+                    {topItem.sold}x
+                  </span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold tracking-[0.15em] mb-0.5" style={{ color: "#A39B86" }}>TOP SELLER THIS WEEK</p>
-                  <p className="text-sm font-bold leading-snug" style={{ color: "#1F2A1E", fontFamily: "'Fraunces', serif" }}>
-                    {topItem?.name}
-                  </p>
-                </div>
-                <span className="text-sm font-bold tabular-nums shrink-0" style={{ color: "#1F2A1E" }}>
-                  {topItem?.sold}x
-                </span>
-              </div>
+              )}
 
-              <div>
-                <p className="text-xs font-bold tracking-[0.15em] mb-2" style={{ color: "#A39B86" }}>DAILY SPECIAL</p>
-                <DailySpecialEditor special={special} items={items} onChange={setSpecial} />
-              </div>
+              {special && (
+                <div>
+                  <p className="text-xs font-bold tracking-[0.15em] mb-2" style={{ color: "#A39B86" }}>DAILY SPECIAL</p>
+                  <DailySpecialEditor
+                    special={{ itemId: special.id, price: special.price, originalPrice: special.originalPrice }}
+                    items={items}
+                    onChange={async ({ itemId, price, originalPrice }) => {
+                      // unmark old special
+                      if (special) await saveItem({ ...special, isSpecial: false });
+                      const newSpecial = items.find((i) => i.id === itemId);
+                      if (newSpecial) await saveItem({ ...newSpecial, isSpecial: true, price, originalPrice });
+                    }}
+                  />
+                </div>
+              )}
             </div>
           )}
 
           {/* ─── Menu ─── */}
           {activeTab === "menu" && (
             <div>
+              {itemsError && <ErrorBanner message="Using sample menu — couldn't reach database." />}
+              {saveError  && <ErrorBanner message={saveError} />}
+
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-bold tracking-[0.15em]" style={{ color: "#A39B86" }}>
                   {items.length} DISH{items.length !== 1 ? "ES" : ""}
@@ -157,33 +206,37 @@ export default function OwnerDashboard() {
                 </button>
               </div>
 
-              {isAddingNew && (
-                <ItemEditor
-                  item={{ ...NEW_ITEM_TEMPLATE, category: categories[0] || "Salads" }}
-                  categories={categories}
-                  onSave={handleSaveItem}
-                  onCancel={() => setIsAddingNew(false)}
-                />
-              )}
+              {itemsLoading ? <LoadingSpinner /> : (
+                <>
+                  {isAddingNew && (
+                    <ItemEditor
+                      item={{ ...NEW_ITEM_TEMPLATE, category: categories[0] || "Salads" }}
+                      categories={categories}
+                      onSave={handleSaveItem}
+                      onCancel={() => setIsAddingNew(false)}
+                    />
+                  )}
 
-              {items.map((item) =>
-                editingItem?.id === item.id ? (
-                  <ItemEditor
-                    key={item.id}
-                    item={item}
-                    categories={categories}
-                    onSave={handleSaveItem}
-                    onCancel={() => setEditingItem(null)}
-                  />
-                ) : (
-                  <MenuItemRow
-                    key={item.id}
-                    item={item}
-                    onEdit={setEditingItem}
-                    onDelete={(id) => setItems(items.filter((i) => i.id !== id))}
-                    onToggleAvailable={(id) => setItems(items.map((i) => i.id === id ? { ...i, available: !i.available } : i))}
-                  />
-                )
+                  {items.map((item) =>
+                    editingItem?.id === item.id ? (
+                      <ItemEditor
+                        key={item.id}
+                        item={item}
+                        categories={categories}
+                        onSave={handleSaveItem}
+                        onCancel={() => setEditingItem(null)}
+                      />
+                    ) : (
+                      <MenuItemRow
+                        key={item.id}
+                        item={item}
+                        onEdit={setEditingItem}
+                        onDelete={(id) => deleteItem(id)}
+                        onToggleAvailable={(id) => toggleAvailable(id)}
+                      />
+                    )
+                  )}
+                </>
               )}
             </div>
           )}
@@ -191,27 +244,39 @@ export default function OwnerDashboard() {
           {/* ─── Orders ─── */}
           {activeTab === "orders" && (
             <div>
+              {ordersError && <ErrorBanner message="Using sample orders — couldn't reach database." />}
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-bold tracking-[0.15em]" style={{ color: "#A39B86" }}>TODAY'S ORDERS</p>
                 <p className="text-xs" style={{ color: "#A39B86" }}>{orders.length} order{orders.length !== 1 ? "s" : ""}</p>
               </div>
-              {orders.map((order) => (
-                <OrderRow
-                  key={order.id}
-                  order={order}
-                  onStatusChange={(id, status) => setOrders(orders.map((o) => o.id === id ? { ...o, status } : o))}
-                />
-              ))}
+              {ordersLoading ? <LoadingSpinner /> : (
+                orders.map((order) => (
+                  <OrderRow
+                    key={order.id}
+                    order={order}
+                    onStatusChange={(id, status) => updateStatus(id, status)}
+                  />
+                ))
+              )}
             </div>
           )}
 
           {/* ─── Settings ─── */}
           {activeTab === "settings" && (
-            <SettingsPanel
-              settings={settings}   setSettings={setSettings}
-              hours={hours}         setHours={setHours}
-              categories={categories} setCategories={setCategories}
-            />
+            <>
+              {settingsError && <ErrorBanner message="Using default settings — couldn't reach database." />}
+              {saveError     && <ErrorBanner message={saveError} />}
+              {settingsLoading ? <LoadingSpinner /> : (
+                <SettingsPanel
+                  settings={settings}
+                  setSettings={(s) => handleSaveSettings(s)}
+                  hours={settings.hours}
+                  setHours={(h) => handleSaveSettings({ hours: h })}
+                  categories={categories}
+                  setCategories={(c) => handleSaveSettings({ categories: c })}
+                />
+              )}
+            </>
           )}
         </div>
       </div>

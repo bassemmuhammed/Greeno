@@ -1,8 +1,8 @@
 import { X, ShoppingBag, Plus, Minus } from "lucide-react";
 import { RESTAURANT_CONFIG } from "../../data/menuData";
 
-function buildWhatsAppMessage(cart, phone, address, note, subtotal, fee, total) {
-  let msg = `*New Order - ${RESTAURANT_CONFIG.name}*\n\n`;
+function buildWhatsAppMessage(cart, phone, address, note, subtotal, fee, total, restaurantName) {
+  let msg = `*New Order - ${restaurantName || RESTAURANT_CONFIG.name}*\n\n`;
   cart.forEach((c) => { msg += `${c.qty}x ${c.name} - ${c.price * c.qty} EGP\n`; });
   msg += `\n*Subtotal:* ${subtotal} EGP`;
   msg += `\n*Delivery:* ${fee} EGP`;
@@ -13,8 +13,16 @@ function buildWhatsAppMessage(cart, phone, address, note, subtotal, fee, total) 
   return encodeURIComponent(msg);
 }
 
-export function OrderModal({ cart, onClose, onInc, onDec, phone, setPhone, address, setAddress, note, setNote, onPlaced }) {
-  const { deliveryFee, minOrder, whatsapp } = RESTAURANT_CONFIG;
+export function OrderModal({
+  cart, onClose, onInc, onDec,
+  phone, setPhone, address, setAddress, note, setNote,
+  onPlaced,
+  // Accept from DB settings, fallback to static
+  deliveryFee    = RESTAURANT_CONFIG.deliveryFee,
+  minOrder       = RESTAURANT_CONFIG.minOrder,
+  whatsapp       = RESTAURANT_CONFIG.whatsapp,
+  restaurantName = RESTAURANT_CONFIG.name,
+}) {
   const subtotal   = cart.reduce((s, c) => s + c.price * c.qty, 0);
   const grandTotal = subtotal > 0 ? subtotal + deliveryFee : 0;
   const belowMin   = subtotal > 0 && subtotal < minOrder;
@@ -89,8 +97,8 @@ export function OrderModal({ cart, onClose, onInc, onDec, phone, setPhone, addre
             {/* Delivery details */}
             <div className="flex flex-col gap-3 mb-6">
               {[
-                { label: "Phone Number",     key: "phone",   setter: setPhone,   type: "tel",  placeholder: "e.g. 010 1234 5678",              val: phone },
-                { label: "Delivery Address", key: "address", setter: setAddress, type: "text", placeholder: "Street, building, floor, apt",     val: address },
+                { label: "Phone Number",     setter: setPhone,   type: "tel",  placeholder: "e.g. 010 1234 5678",          val: phone },
+                { label: "Delivery Address", setter: setAddress, type: "text", placeholder: "Street, building, floor, apt", val: address },
               ].map(({ label, setter, type, placeholder, val }) => (
                 <div key={label}>
                   <label className="text-xs font-bold block mb-1" style={{ color: "#6B6557" }}>{label}</label>
@@ -142,7 +150,7 @@ export function OrderModal({ cart, onClose, onInc, onDec, phone, setPhone, addre
             <button
               disabled={!phone || !address || belowMin}
               onClick={() => {
-                const msg = buildWhatsAppMessage(cart, phone, address, note, subtotal, deliveryFee, grandTotal);
+                const msg = buildWhatsAppMessage(cart, phone, address, note, subtotal, deliveryFee, grandTotal, restaurantName);
                 window.open(`https://wa.me/${whatsapp}?text=${msg}`, "_blank");
                 onPlaced();
               }}
