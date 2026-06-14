@@ -35,9 +35,7 @@ export function OrderTracker({ orderNumber, onClose, onDelivered }) {
         .single();
 
       if (!error && data?.status) {
-        const step = STATUS_TO_STEP[data.status] ?? 0;
-        setStepIndex(step);
-        if (data.status === "Delivered") onDelivered?.();
+        setStepIndex(STATUS_TO_STEP[data.status] ?? 0);
       }
       setLoading(false);
     };
