@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Flame, Leaf, Droplet, Plus, Minus, Heart, X, ShoppingBag } from "lucide-react";
 import { NutrientStamp } from "../shared/NutrientStamp";
 
@@ -28,6 +28,11 @@ export function MenuItemSkeleton() {
 function ItemDetailsSheet({ item, onClose, onAdd, isFav, onToggleFav }) {
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
 
   const handleAdd = () => {
     onAdd(item, qty);
