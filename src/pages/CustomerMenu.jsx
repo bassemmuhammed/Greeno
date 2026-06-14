@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Leaf, Search, ShoppingBag, X, Heart, Clock } from "lucide-react";
+import { Leaf, Search, ShoppingBag, X, Clock } from "lucide-react";
 import { DAILY_SPECIAL } from "../data/menuData";
 import { useMenuItems, useOrders, useSettings } from "../hooks/useSupabase";
 import { useCart } from "../hooks/useCart";
@@ -146,13 +146,6 @@ export default function CustomerMenu() {
   const { cart, addToCart, inc, dec, clear, totalItems, totalPrice } = useCart();
   const { phone, setPhone, address, setAddress, note, setNote, orderCount, incrementOrders } = useCustomer();
 
-  // Lock body scroll when any modal/sheet is open
-  useEffect(() => {
-    const locked = showOrder || showTracker || showStory;
-    document.body.style.overflow = locked ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [showOrder, showTracker, showStory]);
-
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchTerm,     setSearchTerm]     = useState("");
   const [showOrder,      setShowOrder]      = useState(false);
@@ -164,6 +157,13 @@ export default function CustomerMenu() {
   // Story state
   const [storyImages, setStoryImages] = useState([]);
   const [showStory,   setShowStory]   = useState(false);
+
+  // Lock body scroll when any modal/sheet is open
+  useEffect(() => {
+    const locked = showOrder || showTracker || showStory;
+    document.body.style.overflow = locked ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [showOrder, showTracker, showStory]);
 
   // ── Favorites ──
   const [favorites, setFavorites] = useState(() => {
