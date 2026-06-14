@@ -1,17 +1,69 @@
 import { useState, useEffect } from "react";
 import { X, ClipboardCheck, ChefHat, Bike, PackageCheck } from "lucide-react";
-import { ORDER_STEPS, STEP_DURATIONS } from "../../data/menuData";
+import { supabase } from "../../data/supabase";
+
+// ── Map Supabase status → step index ──────────────────────────
+// ORDER_STEPS: 0=Confirmed, 1=Preparing, 2=Out for delivery, 3=Delivered
+const STATUS_TO_STEP = {
+  "Preparing":        1,
+  "Out for delivery": 2,
+  "Delivered":        3,
+};
+
+const ORDER_STEPS = [
+  { key: "confirmed",  label: "Order Confirmed",   desc: "We've received your order and it's being reviewed." },
+  { key: "preparing",  label: "Preparing",          desc: "Our kitchen is preparing your food fresh." },
+  { key: "delivery",   label: "Out for Delivery",   desc: "Your order is on its way to you!" },
+  { key: "delivered",  label: "Delivered",          desc: "Enjoy your meal! Hope you love it. 🌿" },
+];
 
 const STEP_ICONS = [ClipboardCheck, ChefHat, Bike, PackageCheck];
 
 export function OrderTracker({ orderNumber, onClose }) {
   const [stepIndex, setStepIndex] = useState(0);
+  const [loading,   setLoading]   = useState(true);
 
+  // ── Initial fetch ──────────────────────────────────────────
   useEffect(() => {
-    if (stepIndex >= ORDER_STEPS.length - 1) return;
-    const t = setTimeout(() => setStepIndex((i) => i + 1), STEP_DURATIONS[stepIndex]);
-    return () => clearTimeout(t);
-  }, [stepIndex]);
+    if (!orderNumber) return;
+
+    const fetchStatus = async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("status")
+        .eq("id", orderNumber)
+        .single();
+
+      if (!error && data?.status) {
+        setStepIndex(STATUS_TO_STEP[data.status] ?? 0);
+      }
+      setLoading(false);
+    };
+
+    fetchStatus();
+
+    // ── Realtime subscription ──────────────────────────────
+    const channel = supabase
+      .channel(`order-${orderNumber}`)
+      .on(
+        "postgres_changes",
+        {
+          event:  "UPDATE",
+          schema: "public",
+          table:  "orders",
+          filter: `id=eq.${orderNumber}`,
+        },
+        (payload) => {
+          const newStatus = payload.new?.status;
+          if (newStatus) {
+            setStepIndex(STATUS_TO_STEP[newStatus] ?? 0);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [orderNumber]);
 
   const isFinished = stepIndex >= ORDER_STEPS.length - 1;
 
@@ -35,13 +87,16 @@ export function OrderTracker({ orderNumber, onClose }) {
             <X className="w-4 h-4" style={{ color: "#1F2A1E" }} strokeWidth={2.5} />
           </button>
         </div>
+
         <h2 className="text-2xl font-bold mb-1" style={{ color: "#1F2A1E", fontFamily: "'Fraunces', serif" }}>
-          {isFinished ? "Delivered!" : "Tracking your order"}
+          {loading ? "Loading…" : isFinished ? "Delivered!" : "Tracking your order"}
         </h2>
         <p className="text-sm mb-6" style={{ color: "#6B6557" }}>
-          {isFinished
+          {loading
+            ? "Fetching your order status…"
+            : isFinished
             ? "Thanks for ordering — hope you enjoy it!"
-            : "We'll update this in real time as your order moves along."}
+            : "Updates in real time as your order moves along."}
         </p>
 
         {/* Steps */}
@@ -78,10 +133,7 @@ export function OrderTracker({ orderNumber, onClose }) {
                 <div className={`${isLast ? "pb-0" : "pb-6"}`}>
                   <p
                     className="text-sm font-bold mb-0.5 flex items-center gap-2"
-                    style={{
-                      color:      isActive ? "#1F2A1E" : "#A39B86",
-                      fontFamily: "'Fraunces', serif",
-                    }}
+                    style={{ color: isActive ? "#1F2A1E" : "#A39B86", fontFamily: "'Fraunces', serif" }}
                   >
                     {step.label}
                     {isCurrent && !isLast && (
