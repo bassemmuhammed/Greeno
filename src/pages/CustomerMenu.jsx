@@ -152,7 +152,10 @@ export default function CustomerMenu() {
   const [showWelcome,    setShowWelcome]    = useState(true);
   const [showSuccess,    setShowSuccess]    = useState(false);
   const [showTracker,    setShowTracker]    = useState(false);
-  const [trackerOrderId, setTrackerOrderId] = useState(null);
+  const [trackerOrderId, setTrackerOrderId] = useState(() => {
+    try { return localStorage.getItem("greenо_tracker") || null; }
+    catch { return null; }
+  });
 
   // Story state
   const [storyImages, setStoryImages] = useState([]);
@@ -240,13 +243,16 @@ export default function CustomerMenu() {
       setShowOrder(false);
       setShowSuccess(true);
       setTrackerOrderId(orderId);
+      localStorage.setItem("greenо_tracker", orderId);
     } catch (err) {
       console.error("Order save failed:", err);
       const newCount = incrementOrders();
       clear();
       setShowOrder(false);
       setShowSuccess(true);
-      setTrackerOrderId(1000 + newCount);
+      const fallbackId = 1000 + newCount;
+      setTrackerOrderId(fallbackId);
+      localStorage.setItem("greenо_tracker", fallbackId);
     }
   };
 
@@ -463,7 +469,17 @@ export default function CustomerMenu() {
 
         {showWelcome && <WelcomePromo onClose={() => setShowWelcome(false)} />}
         {showSuccess  && <SuccessToast onDone={() => setShowSuccess(false)} />}
-        {showTracker  && <OrderTracker orderNumber={trackerOrderId} onClose={() => setShowTracker(false)} />}
+        {showTracker  && (
+          <OrderTracker
+            orderNumber={trackerOrderId}
+            onClose={() => setShowTracker(false)}
+            onDelivered={() => {
+              localStorage.removeItem("greenо_tracker");
+              setTrackerOrderId(null);
+              setShowTracker(false);
+            }}
+          />
+        )}
 
         {showOrder && (
           <OrderModal

@@ -19,7 +19,7 @@ const ORDER_STEPS = [
 
 const STEP_ICONS = [ClipboardCheck, ChefHat, Bike, PackageCheck];
 
-export function OrderTracker({ orderNumber, onClose }) {
+export function OrderTracker({ orderNumber, onClose, onDelivered }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [loading,   setLoading]   = useState(true);
 
@@ -35,7 +35,9 @@ export function OrderTracker({ orderNumber, onClose }) {
         .single();
 
       if (!error && data?.status) {
-        setStepIndex(STATUS_TO_STEP[data.status] ?? 0);
+        const step = STATUS_TO_STEP[data.status] ?? 0;
+        setStepIndex(step);
+        if (data.status === "Delivered") onDelivered?.();
       }
       setLoading(false);
     };
@@ -57,6 +59,10 @@ export function OrderTracker({ orderNumber, onClose }) {
           const newStatus = payload.new?.status;
           if (newStatus) {
             setStepIndex(STATUS_TO_STEP[newStatus] ?? 0);
+            if (newStatus === "Delivered") {
+              // انتظر ثانيتين عشان العميل يشوف "Delivered" قبل ما تختفي
+              setTimeout(() => onDelivered?.(), 2000);
+            }
           }
         }
       )
