@@ -260,28 +260,43 @@ export default function CustomerMenu() {
         <div className="w-full min-h-dvh flex flex-col relative" style={{ backgroundColor: "#FAF7F0", maxWidth: "100vw" }}>
 
           {/* ── Header ── */}
-          <div className="px-4 pt-8 pb-4" dir="ltr">
-            <div className="flex flex-col items-center text-center gap-2">
+          <div className="px-4 pt-8 pb-3" dir="ltr">
+            <div className="flex items-center gap-4">
+              {/* Story circle — جنب الاسم مش فوقه */}
               <StoryCircle hasStory={storyImages.length > 0} onOpenStory={() => storyImages.length > 0 && setShowStory(true)} />
-              <h1 className="text-3xl font-bold leading-tight" style={{ color: "#1F2A1E", fontFamily: "'Fraunces', serif", letterSpacing: "-0.01em" }}>
-                {restaurantName}
-              </h1>
-              <p className="text-xs" style={{ color: "#6B6557" }}>{tagline}</p>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full" style={{ backgroundColor: isOpen ? "#8FA888" : "#E4E0D4", color: isOpen ? "#1F2A1E" : "#8A8578" }}>
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: isOpen ? "#1F2A1E" : "#A39B86" }} />
-                  {isOpen ? "Open Now" : "Closed"}
-                </span>
-                <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full" style={{ backgroundColor: "#E4E0D4", color: "#6B6557" }}>
-                  {deliveryTime}
-                </span>
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <h1
+                  className="text-2xl font-bold leading-tight"
+                  style={{ color: "#1F2A1E", fontFamily: "'Fraunces', serif", letterSpacing: "-0.01em" }}
+                >
+                  {restaurantName}
+                </h1>
+                <p className="text-xs mb-2" style={{ color: "#6B6557" }}>{tagline}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span
+                    className="flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full"
+                    style={{ backgroundColor: isOpen ? "#8FA888" : "#E4E0D4", color: isOpen ? "#1F2A1E" : "#8A8578" }}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: isOpen ? "#1F2A1E" : "#A39B86" }} />
+                    {isOpen ? "Open Now" : "Closed"}
+                  </span>
+                  <span
+                    className="flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full"
+                    style={{ backgroundColor: "#E4E0D4", color: "#6B6557" }}
+                  >
+                    {deliveryTime}
+                  </span>
+                </div>
               </div>
-              {orderCount > 0 && (
-                <p className="text-xs" style={{ color: "#A39B86" }}>
-                  🌿 You've ordered {orderCount} time{orderCount > 1 ? "s" : ""} — order {Math.max(0, 5 - (orderCount % 5))} more for a free treat!
-                </p>
-              )}
             </div>
+
+            {orderCount > 0 && (
+              <p className="text-xs mt-2" style={{ color: "#A39B86" }}>
+                🌿 You've ordered {orderCount} time{orderCount > 1 ? "s" : ""} — order {Math.max(0, 5 - (orderCount % 5))} more for a free treat!
+              </p>
+            )}
           </div>
 
           {/* ── Daily Special ── */}
