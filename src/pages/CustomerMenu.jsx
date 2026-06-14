@@ -21,7 +21,9 @@ export default function CustomerMenu() {
   const [showTracker,    setShowTracker]    = useState(false);
   const [trackerOrderId, setTrackerOrderId] = useState(null);
 
-  const [isOpen, setIsOpen] = useState(false);
+  const hour   = new Date().getHours();
+  const isOpen = hour >= RESTAURANT_CONFIG.openHour && hour < RESTAURANT_CONFIG.closeHour;
+
   const filteredItems = MENU_ITEMS.filter((item) => {
     const matchesCat    = activeCategory === "All" || item.category === activeCategory;
     const matchesSearch =
