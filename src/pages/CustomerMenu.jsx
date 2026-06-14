@@ -262,7 +262,7 @@ export default function CustomerMenu() {
           {/* ── Header ── */}
           <div className="px-4 pt-8 pb-3" dir="ltr">
             <div className="flex items-center gap-4">
-              {/* Story circle — جنب الاسم مش فوقه */}
+              {/* Story circle */}
               <StoryCircle hasStory={storyImages.length > 0} onOpenStory={() => storyImages.length > 0 && setShowStory(true)} />
 
               {/* Info */}
@@ -296,6 +296,67 @@ export default function CustomerMenu() {
               <p className="text-xs mt-2" style={{ color: "#A39B86" }}>
                 🌿 You've ordered {orderCount} time{orderCount > 1 ? "s" : ""} — order {Math.max(0, 5 - (orderCount % 5))} more for a free treat!
               </p>
+            )}
+
+            {/* ── Track Order Banner ── */}
+            {trackerOrderId && (
+              <button
+                onClick={() => setShowTracker(true)}
+                className="mt-3 w-full flex items-center gap-3 px-4 py-3 rounded-2xl overflow-hidden relative"
+                style={{
+                  backgroundColor: "#1F2A1E",
+                  boxShadow: "0 2px 12px rgba(31,42,30,0.18)",
+                }}
+              >
+                {/* Shimmer sweep */}
+                <span
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background: "linear-gradient(100deg, transparent 20%, rgba(143,168,136,0.18) 50%, transparent 80%)",
+                    animation: "shimmer 2.2s infinite",
+                  }}
+                />
+                <style>{`
+                  @keyframes shimmer {
+                    0%   { transform: translateX(-100%); }
+                    100% { transform: translateX(100%); }
+                  }
+                  @keyframes ping-slow {
+                    0%, 100% { transform: scale(1);   opacity: 1; }
+                    50%       { transform: scale(1.55); opacity: 0; }
+                  }
+                `}</style>
+
+                {/* Pulse dot */}
+                <span className="relative flex shrink-0" style={{ width: 10, height: 10 }}>
+                  <span
+                    className="absolute inline-flex rounded-full"
+                    style={{
+                      width: 10, height: 10,
+                      backgroundColor: "#8FA888",
+                      animation: "ping-slow 1.4s ease-in-out infinite",
+                    }}
+                  />
+                  <span
+                    className="relative inline-flex rounded-full"
+                    style={{ width: 10, height: 10, backgroundColor: "#8FA888" }}
+                  />
+                </span>
+
+                <div className="flex-1 text-left">
+                  <p className="text-xs font-bold" style={{ color: "#8FA888", fontFamily: "'Fraunces', serif", letterSpacing: "0.08em" }}>
+                    ORDER IN PROGRESS
+                  </p>
+                  <p className="text-sm font-bold" style={{ color: "#FAF7F0", fontFamily: "'Fraunces', serif" }}>
+                    Track Order #{trackerOrderId}
+                  </p>
+                </div>
+
+                {/* Arrow */}
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ color: "#8FA888", shrink: 0 }}>
+                  <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
             )}
           </div>
 
@@ -381,16 +442,6 @@ export default function CustomerMenu() {
           {/* ── FAB Cart ── */}
           <div className="fixed bottom-0 left-0 right-0 z-40 px-4 py-4" style={{ backgroundColor: "transparent", pointerEvents: "none" }}>
             <div style={{ maxWidth: "100vw", margin: "0 auto", pointerEvents: "auto" }}>
-              {trackerOrderId && (
-                <button
-                  onClick={() => setShowTracker(true)}
-                  className="w-full mb-2 py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold border transition-colors"
-                  style={{ borderColor: "#8FA888", color: "#1F2A1E", backgroundColor: "#FAF7F0", boxShadow: "0 -2px 12px rgba(0,0,0,0.06)" }}
-                >
-                  <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: "#8FA888" }} />
-                  Track Order #{trackerOrderId}
-                </button>
-              )}
               <button
                 className="w-full py-4 rounded-2xl flex items-center justify-between px-5 transition-opacity"
                 style={{ backgroundColor: "#1F2A1E", opacity: totalItems === 0 ? 0.45 : 1, boxShadow: "0 4px 24px rgba(31,42,30,0.25)", pointerEvents: totalItems === 0 ? "none" : "auto" }}
