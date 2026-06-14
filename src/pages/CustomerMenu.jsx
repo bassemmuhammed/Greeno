@@ -13,7 +13,7 @@ import { WelcomePromo, SuccessToast } from "../components/customer/Overlays";
 export default function CustomerMenu() {
   const { items, loading: itemsLoading } = useMenuItems();
   const { settings, loading: settingsLoading } = useSettings();
-  const { placeOrder, incrementSold } = useOrders ? useOrders() : {};
+  const { placeOrder } = useOrders();
 
   const { cart, addToCart, inc, dec, clear, totalItems, totalPrice } = useCart();
   const { phone, setPhone, address, setAddress, note, setNote, orderCount, incrementOrders } = useCustomer();
@@ -50,18 +50,27 @@ export default function CustomerMenu() {
   });
 
   const handleOrderPlaced = async () => {
-    const newCount = incrementOrders();
-    const orderId  = 1000 + newCount;
-
     // Save order to Supabase
     try {
-      const { placeOrder: place } = await import("../hooks/useSupabase");
-    } catch (_) {}
-
-    clear();
-    setShowOrder(false);
-    setShowSuccess(true);
-    setTrackerOrderId(orderId);
+      const subtotal   = cart.reduce((s, c) => s + c.price * c.qty, 0);
+      const fee        = config.deliveryFee || 20;
+      const total      = subtotal + fee;
+      const saved      = await placeOrder({ cart, phone, address, note, total });
+      const orderId    = saved?.id || (1000 + orderCount + 1);
+      const newCount   = incrementOrders();
+      clear();
+      setShowOrder(false);
+      setShowSuccess(true);
+      setTrackerOrderId(orderId);
+    } catch (err) {
+      console.error("Order save failed:", err);
+      // Still complete the flow even if DB save fails
+      const newCount = incrementOrders();
+      clear();
+      setShowOrder(false);
+      setShowSuccess(true);
+      setTrackerOrderId(1000 + newCount);
+    }
   };
 
   return (
