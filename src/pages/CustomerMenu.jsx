@@ -92,27 +92,30 @@ function StoryViewer({ images, onClose }) {
       <button onClick={onClose} className="absolute top-10 right-4 z-10 p-2">
         <X className="w-6 h-6 text-white" />
       </button>
-      <div className="flex-1 relative" style={{ backgroundColor: "#0a0a0a", overflow: "hidden" }}>
-        {/* Blurred background fill — eliminates black bars without cropping the image */}
+      <div className="flex-1 relative" style={{ backgroundColor: "#0a0a0a", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {/* Blurred background — stretches to fill all gaps */}
         <img
           src={story.url}
           aria-hidden="true"
           style={{
-            position: "absolute", inset: 0,
-            width: "100%", height: "100%",
+            position: "absolute", inset: "-10%",
+            width: "120%", height: "120%",
             objectFit: "cover",
-            filter: "blur(22px) brightness(0.35) saturate(1.4)",
-            transform: "scale(1.08)",
+            filter: "blur(28px) brightness(0.3) saturate(1.6)",
           }}
         />
-        {/* Actual story image — full, uncropped */}
+        {/* Actual story image — full width, natural height, centered */}
         <img
           src={story.url}
           alt={`story-${current}`}
           style={{
-            position: "absolute", inset: 0,
-            width: "100%", height: "100%",
+            position: "relative",
+            zIndex: 1,
+            width: "100%",
+            height: "auto",
+            maxHeight: "100%",
             objectFit: "contain",
+            display: "block",
           }}
         />
 
