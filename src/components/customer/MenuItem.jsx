@@ -369,79 +369,52 @@ export function MenuItem({ item, onAdd, favorites, onToggleFav }) {
                   />
                 </button>
               </div>
-              <span
-                className="text-base font-bold shrink-0 tabular-nums"
-                style={{ color: "#1F2A1E", fontFamily: "'Fraunces', serif" }}
-              >
-                {activePrice} EGP
-              </span>
+              <div className="flex items-center gap-2 shrink-0">
+                {/* Size toggle pills */}
+                {hasSizes && (
+                  <div
+                    className="flex rounded-full overflow-hidden"
+                    style={{ border: "1.5px solid #E4E0D4" }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {item.sizes.map((s, idx) => (
+                      <button
+                        key={s.label}
+                        onClick={() => setSelectedSize(idx)}
+                        className="px-2.5 py-1 text-xs font-bold transition-all"
+                        style={{
+                          backgroundColor: selectedSize === idx ? "#1F2A1E" : "transparent",
+                          color: selectedSize === idx ? "#FAF7F0" : "#6B6557",
+                          fontFamily: "'Fraunces', serif",
+                          borderRight: idx < item.sizes.length - 1 ? "1.5px solid #E4E0D4" : "none",
+                        }}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <span
+                  className="text-base font-bold tabular-nums"
+                  style={{ color: "#1F2A1E", fontFamily: "'Fraunces', serif" }}
+                >
+                  {activePrice} EGP
+                </span>
+              </div>
             </div>
 
             <p className="text-sm leading-relaxed line-clamp-1" style={{ color: "#6B6557" }}>
-              {item.desc}
+              {hasSizes && item.sizes[selectedSize].desc ? item.sizes[selectedSize].desc : item.desc}
             </p>
 
             <div className="flex items-center gap-2 mt-3 flex-wrap">
-              <NutrientStamp icon={Flame} label={`${item.cal} kcal`} rotate={-2} />
+              <NutrientStamp icon={Flame} label={`${hasSizes ? item.sizes[selectedSize].cal || item.cal : item.cal} kcal`} rotate={-2} />
               {item.tags.map((tag, i) => (
                 <NutrientStamp key={tag} icon={i === 0 ? Leaf : Droplet} label={tag} rotate={i % 2 === 0 ? 1 : -1.5} />
               ))}
             </div>
 
-            {/* ── Size Selector ── */}
-            {hasSizes && (
-              <div
-                className="mt-3 rounded-2xl overflow-hidden"
-                style={{ border: "1.5px solid #E4E0D4" }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                {item.sizes.map((s, idx) => {
-                  const isActive = selectedSize === idx;
-                  return (
-                    <button
-                      key={s.label}
-                      onClick={() => setSelectedSize(idx)}
-                      className="w-full flex items-center justify-between px-3 py-2.5 transition-all"
-                      style={{
-                        backgroundColor: isActive ? "#1F2A1E" : idx > 0 ? "#F5F2EA" : "#fff",
-                        borderTop: idx > 0 ? "1px solid #E4E0D4" : "none",
-                      }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0"
-                          style={{
-                            border: `2px solid ${isActive ? "#8FA888" : "#C9C4B8"}`,
-                            backgroundColor: isActive ? "#8FA888" : "transparent",
-                          }}
-                        >
-                          {isActive && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                        </div>
-                        <div className="text-left">
-                          <span
-                            className="text-xs font-bold"
-                            style={{ color: isActive ? "#FAF7F0" : "#1F2A1E", fontFamily: "'Fraunces', serif" }}
-                          >
-                            {s.label}
-                          </span>
-                          {s.cal && (
-                            <span className="text-xs ml-1.5" style={{ color: isActive ? "#8FA888" : "#9B9589" }}>
-                              · {s.cal} kcal
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <span
-                        className="text-xs font-bold tabular-nums"
-                        style={{ color: isActive ? "#FAF7F0" : "#1F2A1E", fontFamily: "'Fraunces', serif" }}
-                      >
-                        {s.price} EGP
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+
           </div>
 
           {/* Item image thumbnail */}
