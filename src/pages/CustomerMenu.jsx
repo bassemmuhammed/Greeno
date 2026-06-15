@@ -99,7 +99,7 @@ function StoryViewer({ images, onClose }) {
         touchAction: "none",
         transform: `translateY(${dragY}px) scale(${dragScale})`,
         opacity: dragOpacity,
-        transition: isDragging ? "none" : "transform 0.18s ease-out, opacity 0.18s ease-out",
+        transition: "none",
       }}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
