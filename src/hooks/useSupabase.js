@@ -179,6 +179,10 @@ export function useSettings() {
 
 // ─── Normalizers (DB → App) ───────────────────────────────────
 function normalizeItem(row) {
+  let sizes = row.sizes;
+  if (typeof sizes === "string") {
+    try { sizes = JSON.parse(sizes); } catch { sizes = null; }
+  }
   return {
     id:            row.id,
     name:          row.name,
@@ -192,6 +196,7 @@ function normalizeItem(row) {
     isSpecial:     row.is_special,
     originalPrice: row.original_price ? Number(row.original_price) : undefined,
     sold:          row.sold || 0,
+    sizes:         Array.isArray(sizes) && sizes.length > 1 ? sizes : null,
   };
 }
 
@@ -208,6 +213,7 @@ function denormalizeItem(item) {
     is_special:     item.isSpecial || false,
     original_price: item.originalPrice || null,
     sold:           item.sold || 0,
+    sizes:          item.sizes || null,
   };
 }
 
