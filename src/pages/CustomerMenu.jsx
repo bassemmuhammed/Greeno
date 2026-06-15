@@ -25,7 +25,6 @@ function StoryViewer({ images, onClose }) {
   // ── Swipe down to close ──
   const [dragY, setDragY]       = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [isClosing, setIsClosing]   = useState(false);
   const startYRef  = useRef(0);
   const dragYRef   = useRef(0);       // shadow ref so onTouchEnd reads latest value
 
@@ -45,10 +44,9 @@ function StoryViewer({ images, onClose }) {
     setIsDragging(false);
     const dy = dragYRef.current;
     if (dy > 90) {
-      // animate slide-down then close
-      setIsClosing(true);
-      setDragY(window.innerHeight);
-      setTimeout(() => onClose(), 220);
+      // close instantly — no animation
+      dragYRef.current = 0;
+      onClose();
     } else {
       // snap back, resume timer
       dragYRef.current = 0;
@@ -64,7 +62,7 @@ function StoryViewer({ images, onClose }) {
   }, [current]);
 
   useEffect(() => {
-    if (isPaused || isClosing) {
+    if (isPaused) {
       clearInterval(timerRef.current);
       return;
     }
@@ -81,13 +79,13 @@ function StoryViewer({ images, onClose }) {
       }
     }, 30);
     return () => clearInterval(timerRef.current);
-  }, [current, isPaused, isClosing]);
+  }, [current, isPaused]);
 
   const prev = () => { if (current > 0) setCurrent((p) => p - 1); };
   const next = () => { if (current < images.length - 1) setCurrent((p) => p + 1); else onClose(); };
 
-  const dragOpacity = isClosing ? 0 : Math.max(1 - dragY / 320, 0);
-  const dragScale   = isClosing ? 0.88 : Math.max(1 - dragY / 900, 0.88);
+  const dragOpacity = Math.max(1 - dragY / 320, 0);
+  const dragScale   = Math.max(1 - dragY / 900, 0.88);
 
   // Current story object: { url, caption, tagX, tagY } — caption position
   // (tagX/tagY, in %) is set by the owner from the dashboard.
@@ -101,7 +99,7 @@ function StoryViewer({ images, onClose }) {
         touchAction: "none",
         transform: `translateY(${dragY}px) scale(${dragScale})`,
         opacity: dragOpacity,
-        transition: isDragging ? "none" : isClosing ? "transform 0.22s ease-in, opacity 0.22s ease-in" : "transform 0.18s ease-out, opacity 0.18s ease-out",
+        transition: isDragging ? "none" : "transform 0.18s ease-out, opacity 0.18s ease-out",
       }}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
