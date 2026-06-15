@@ -141,7 +141,9 @@ function ItemDetailsSheet({ item, onClose, onAdd, isFav, onToggleFav }) {
             </div>
 
             {/* Description */}
-            <p className="text-sm leading-relaxed mb-3" style={{ color: "#6B6557" }}>{item.desc}</p>
+            <p className="text-sm leading-relaxed mb-3" style={{ color: "#6B6557" }}>
+              {hasSizes && item.sizes[selectedSize]?.desc ? item.sizes[selectedSize].desc : item.desc}
+            </p>
 
             {/* Nutrients */}
             <div className="flex flex-wrap gap-2 mb-4">
