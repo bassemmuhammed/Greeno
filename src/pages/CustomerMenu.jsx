@@ -20,23 +20,25 @@ function StoryViewer({ images, onClose }) {
 
   // ── Swipe down to close ──
   const [dragY, setDragY] = useState(0);
-  const closeDragRef = useRef(false);
+  const [isDragging, setIsDragging] = useState(false);
   const startYRef = useRef(0);
 
   const onTouchStart = (e) => {
-    closeDragRef.current = true;
     startYRef.current = e.touches[0].clientY;
+    setIsDragging(true);
   };
   const onTouchMove = (e) => {
-    if (!closeDragRef.current) return;
     const delta = e.touches[0].clientY - startYRef.current;
     if (delta > 0) setDragY(delta);
   };
   const onTouchEnd = () => {
-    if (!closeDragRef.current) return;
-    closeDragRef.current = false;
-    if (dragY > 120) onClose();
-    else setDragY(0);
+    setIsDragging(false);
+    if (dragY > 100) {
+      setDragY(0);
+      onClose();
+    } else {
+      setDragY(0);
+    }
   };
 
   useEffect(() => {
@@ -58,8 +60,8 @@ function StoryViewer({ images, onClose }) {
   const prev = () => { if (current > 0) setCurrent((p) => p - 1); };
   const next = () => { if (current < images.length - 1) setCurrent((p) => p + 1); else onClose(); };
 
-  const dragOpacity = Math.max(1 - dragY / 400, 0.4);
-  const dragScale   = Math.max(1 - dragY / 1200, 0.9);
+  const dragOpacity = Math.max(1 - dragY / 350, 0);
+  const dragScale   = Math.max(1 - dragY / 900, 0.88);
 
   // Current story object: { url, caption, tagX, tagY } — caption position
   // (tagX/tagY, in %) is set by the owner from the dashboard.
@@ -73,7 +75,7 @@ function StoryViewer({ images, onClose }) {
         touchAction: "none",
         transform: `translateY(${dragY}px) scale(${dragScale})`,
         opacity: dragOpacity,
-        transition: closeDragRef.current ? "none" : "transform 0.25s ease, opacity 0.25s ease",
+        transition: isDragging ? "none" : "transform 0.18s ease-out, opacity 0.18s ease-out",
       }}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
@@ -105,7 +107,7 @@ function StoryViewer({ images, onClose }) {
       />
 
       {/* Progress bars — overlaid on top */}
-      <div className="absolute top-0 left-0 right-0 flex gap-1 px-3 pt-12 pb-2" style={{ zIndex: 10 }}>
+      <div className="absolute top-0 left-0 right-0 flex gap-1 px-3 pt-2 pb-2" style={{ zIndex: 10 }}>
         {images.map((_, i) => (
           <div key={i} className="flex-1 h-0.5 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(255,255,255,0.3)" }}>
             <div
@@ -117,7 +119,7 @@ function StoryViewer({ images, onClose }) {
       </div>
 
       {/* Close button */}
-      <button onClick={onClose} className="absolute right-4 z-20 p-2" style={{ top: "3.5rem" }}>
+      <button onClick={onClose} className="absolute right-4 z-20 p-2" style={{ top: "0.5rem" }}>
         <X className="w-6 h-6 text-white" />
       </button>
 
