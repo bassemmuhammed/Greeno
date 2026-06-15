@@ -18,6 +18,27 @@ function StoryViewer({ images, onClose }) {
   const timerRef = useRef(null);
   const DURATION = 4000;
 
+  // ── Swipe down to close ──
+  const [dragY, setDragY] = useState(0);
+  const closeDragRef = useRef(false);
+  const startYRef = useRef(0);
+
+  const onTouchStart = (e) => {
+    closeDragRef.current = true;
+    startYRef.current = e.touches[0].clientY;
+  };
+  const onTouchMove = (e) => {
+    if (!closeDragRef.current) return;
+    const delta = e.touches[0].clientY - startYRef.current;
+    if (delta > 0) setDragY(delta);
+  };
+  const onTouchEnd = () => {
+    if (!closeDragRef.current) return;
+    closeDragRef.current = false;
+    if (dragY > 120) onClose();
+    else setDragY(0);
+  };
+
   useEffect(() => {
     setProgress(0);
     const start = Date.now();
@@ -37,8 +58,27 @@ function StoryViewer({ images, onClose }) {
   const prev = () => { if (current > 0) setCurrent((p) => p - 1); };
   const next = () => { if (current < images.length - 1) setCurrent((p) => p + 1); else onClose(); };
 
+  const dragOpacity = Math.max(1 - dragY / 400, 0.4);
+  const dragScale   = Math.max(1 - dragY / 1200, 0.9);
+
+  // Current story object: { url, caption, tagX, tagY } — caption position
+  // (tagX/tagY, in %) is set by the owner from the dashboard.
+  const story = images[current];
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: "#000", touchAction: "none" }}>
+    <div
+      className="fixed inset-0 z-50 flex flex-col"
+      style={{
+        backgroundColor: "#000",
+        touchAction: "none",
+        transform: `translateY(${dragY}px) scale(${dragScale})`,
+        opacity: dragOpacity,
+        transition: closeDragRef.current ? "none" : "transform 0.25s ease, opacity 0.25s ease",
+      }}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
       <div className="flex gap-1 px-3 pt-10 pb-2">
         {images.map((_, i) => (
           <div key={i} className="flex-1 h-0.5 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(255,255,255,0.3)" }}>
@@ -53,7 +93,29 @@ function StoryViewer({ images, onClose }) {
         <X className="w-6 h-6 text-white" />
       </button>
       <div className="flex-1 relative flex items-center justify-center" style={{ backgroundColor: "#000" }}>
-        <img src={images[current]} alt={`story-${current}`} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+        <img src={story.url} alt={`story-${current}`} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+
+        {/* Caption tag — position set by the owner from the dashboard */}
+        {story.caption && (
+          <div
+            style={{
+              position: "absolute",
+              left: `${story.tagX ?? 50}%`,
+              top: `${story.tagY ?? 88}%`,
+              transform: "translate(-50%, -50%)",
+              maxWidth: "85%",
+              zIndex: 10,
+              pointerEvents: "none",
+            }}
+          >
+            <div dir="rtl" style={{ backgroundColor: "rgba(0,0,0,0.55)", borderRadius: 14, padding: "10px 18px" }}>
+              <p style={{ color: "#fff", fontWeight: 800, fontSize: 16, fontFamily: "'Fraunces', serif", textAlign: "center", margin: 0, whiteSpace: "pre-wrap" }}>
+                {story.caption}
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="absolute inset-0 flex">
           <div className="flex-1" onClick={prev} />
           <div className="flex-1" onClick={next} />
@@ -188,11 +250,21 @@ export default function CustomerMenu() {
     catch { return []; }
   });
 
-  // Load story images
+  // Load story images (with caption + tag position set by the owner)
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase.from("story_images").select("url").order("created_at", { ascending: true });
-      if (!error && data) setStoryImages(data.map((r) => r.url));
+      const { data, error } = await supabase
+        .from("story_images")
+        .select("url, caption, tag_x, tag_y")
+        .order("created_at", { ascending: true });
+      if (!error && data) {
+        setStoryImages(data.map((r) => ({
+          url: r.url,
+          caption: r.caption || "",
+          tagX: r.tag_x,
+          tagY: r.tag_y,
+        })));
+      }
     })();
   }, []);
 

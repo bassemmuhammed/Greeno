@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Leaf, TrendingUp, Package, ShoppingBag, Settings, Star, LogOut, Plus, RefreshCw, AlertCircle, ImagePlus, Trash2, Images } from "lucide-react";
+import { Leaf, TrendingUp, Package, ShoppingBag, Settings, Star, LogOut, Plus, RefreshCw, AlertCircle, ImagePlus, Trash2, Images, Tag, X } from "lucide-react";
 import { WEEKLY_SALES } from "../data/menuData";
 import { useMenuItems, useOrders, useSettings } from "../hooks/useSupabase";
 import { StatCard, MiniBarChart, StatusToggleCard } from "../components/owner/StatsWidgets";
@@ -38,17 +38,165 @@ function ErrorBanner({ message }) {
   );
 }
 
+// ─── Story Tag Positioner ───────────────────────────────────────
+// Lets the owner drag the caption tag anywhere over the story photo
+// (top, center, bottom, or full width). Position is stored as a
+// percentage of the preview box — the same way it's drawn for customers.
+function PositionableTag({ x, y, onChange, containerRef, children }) {
+  const draggingRef = useRef(false);
+
+  useEffect(() => {
+    const move = (e) => {
+      if (!draggingRef.current || !containerRef.current) return;
+      const point = e.touches ? e.touches[0] : e;
+      const rect  = containerRef.current.getBoundingClientRect();
+      const nx = ((point.clientX - rect.left) / rect.width) * 100;
+      const ny = ((point.clientY - rect.top) / rect.height) * 100;
+      onChange({
+        x: Math.min(Math.max(nx, 6), 94),
+        y: Math.min(Math.max(ny, 6), 94),
+      });
+      if (e.cancelable) e.preventDefault();
+    };
+    const end = () => { draggingRef.current = false; };
+
+    window.addEventListener("touchmove", move, { passive: false });
+    window.addEventListener("touchend", end);
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", end);
+    return () => {
+      window.removeEventListener("touchmove", move);
+      window.removeEventListener("touchend", end);
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", end);
+    };
+  }, [containerRef, onChange]);
+
+  const start = (e) => {
+    e.stopPropagation();
+    draggingRef.current = true;
+  };
+
+  return (
+    <div
+      onTouchStart={start}
+      onMouseDown={start}
+      style={{
+        position: "absolute",
+        left: `${x}%`,
+        top: `${y}%`,
+        transform: "translate(-50%, -50%)",
+        touchAction: "none",
+        cursor: "grab",
+        zIndex: 20,
+        maxWidth: "85%",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ─── Story Tag Editor (modal) ───────────────────────────────────
+function StoryTagEditor({ image, onClose, onSave }) {
+  const [caption, setCaption] = useState(image.caption || "");
+  const [pos, setPos] = useState({
+    x: image.tag_x ?? 50,
+    y: image.tag_y ?? 88,
+  });
+  const [saving, setSaving] = useState(false);
+  const containerRef = useRef(null);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await onSave({ id: image.id, caption: caption.trim(), tag_x: pos.x, tag_y: pos.y });
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ backgroundColor: "rgba(0,0,0,0.6)" }}>
+      <div className="w-full max-w-sm flex flex-col" style={{ backgroundColor: "#FAF7F0", borderRadius: 20, overflow: "hidden", maxHeight: "92vh" }}>
+        {/* Header */}
+        <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid #E4E0D4" }}>
+          <p className="text-sm font-bold" style={{ color: "#1F2A1E", fontFamily: "'Fraunces', serif" }}>Story Tag</p>
+          <button onClick={onClose}>
+            <X className="w-4 h-4" style={{ color: "#A39B86" }} />
+          </button>
+        </div>
+
+        {/* Preview — mirrors the customer story screen */}
+        <div ref={containerRef} className="relative w-full" style={{ aspectRatio: "9 / 16", backgroundColor: "#000", overflow: "hidden" }}>
+          <img src={image.url} alt="story" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+          {caption.trim() && (
+            <PositionableTag x={pos.x} y={pos.y} onChange={setPos} containerRef={containerRef}>
+              <div dir="rtl" style={{ backgroundColor: "rgba(0,0,0,0.55)", borderRadius: 14, padding: "10px 18px" }}>
+                <p style={{ color: "#fff", fontWeight: 800, fontSize: 16, fontFamily: "'Fraunces', serif", textAlign: "center", margin: 0, whiteSpace: "pre-wrap" }}>
+                  {caption}
+                </p>
+              </div>
+            </PositionableTag>
+          )}
+        </div>
+
+        {/* Controls */}
+        <div className="p-4 flex flex-col gap-3">
+          <div>
+            <label className="text-[10px] font-bold tracking-[0.15em]" style={{ color: "#A39B86" }}>CAPTION</label>
+            <textarea
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              placeholder="اكتب التعليق هنا..."
+              dir="rtl"
+              rows={2}
+              className="w-full mt-1 px-3 py-2 rounded-xl text-sm outline-none resize-none"
+              style={{ border: "1px solid #E4E0D4", backgroundColor: "#FFFFFF", color: "#1F2A1E" }}
+            />
+            {caption.trim() && (
+              <p className="text-[10px] mt-1.5" style={{ color: "#C4BFB4" }}>
+                Drag the tag on the photo to position it — top, middle, bottom, anywhere.
+              </p>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={onClose}
+              className="flex-1 py-2.5 rounded-full text-sm font-bold"
+              style={{ border: "1px solid #E4E0D4", color: "#6B6557" }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex-1 py-2.5 rounded-full text-sm font-bold text-white transition-opacity"
+              style={{ backgroundColor: "#1F2A1E", opacity: saving ? 0.6 : 1 }}
+            >
+              {saving ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Story Manager Component ───────────────────────────────────
 function StoryManager() {
-  const [images,    setImages]    = useState([]);
-  const [uploading, setUploading] = useState(false);
-  const [error,     setError]     = useState(null);
+  const [images,       setImages]       = useState([]);
+  const [uploading,    setUploading]    = useState(false);
+  const [error,        setError]        = useState(null);
+  const [editingImage, setEditingImage] = useState(null);
   const fileRef = useRef(null);
 
   const loadImages = async () => {
     const { data, error } = await supabase
       .from("story_images")
-      .select("id, url")
+      .select("id, url, caption, tag_x, tag_y")
       .order("created_at", { ascending: true });
     if (!error && data) setImages(data);
   };
@@ -95,6 +243,19 @@ function StoryManager() {
       await supabase.storage.from("story-images").remove([fileName]);
       await supabase.from("story_images").delete().eq("id", id);
       setImages((prev) => prev.filter((img) => img.id !== id));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleSaveTag = async ({ id, caption, tag_x, tag_y }) => {
+    try {
+      const { error: updateError } = await supabase
+        .from("story_images")
+        .update({ caption, tag_x, tag_y })
+        .eq("id", id);
+      if (updateError) throw updateError;
+      setImages((prev) => prev.map((img) => img.id === id ? { ...img, caption, tag_x, tag_y } : img));
     } catch (err) {
       setError(err.message);
     }
@@ -154,21 +315,30 @@ function StoryManager() {
       ) : (
         <div className="grid grid-cols-3 gap-2">
           {images.map((img) => (
-            <div key={img.id} className="relative aspect-square rounded-xl overflow-hidden group">
+            <div
+              key={img.id}
+              className="relative aspect-square rounded-xl overflow-hidden cursor-pointer"
+              onClick={() => setEditingImage(img)}
+            >
               <img src={img.url} alt="story" className="w-full h-full object-cover" />
+
+              {/* Caption indicator */}
+              {img.caption && (
+                <div
+                  className="absolute bottom-1 left-1 flex items-center justify-center rounded-full"
+                  style={{ width: 18, height: 18, backgroundColor: "rgba(31,42,30,0.75)" }}
+                >
+                  <Tag className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />
+                </div>
+              )}
+
+              {/* Delete */}
               <button
-                onClick={() => handleDelete(img.id, img.url)}
-                className="absolute inset-0 flex items-center justify-center transition-opacity"
-                style={{ backgroundColor: "rgba(0,0,0,0.45)", opacity: 0 }}
-                onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = 0}
-                onTouchStart={(e) => e.currentTarget.style.opacity = 1}
-                onTouchEnd={(e) => {
-                  handleDelete(img.id, img.url);
-                  e.currentTarget.style.opacity = 0;
-                }}
+                onClick={(e) => { e.stopPropagation(); handleDelete(img.id, img.url); }}
+                className="absolute top-1 right-1 flex items-center justify-center rounded-full"
+                style={{ width: 22, height: 22, backgroundColor: "rgba(0,0,0,0.45)" }}
               >
-                <Trash2 className="w-5 h-5 text-white" strokeWidth={2} />
+                <Trash2 className="w-3 h-3 text-white" strokeWidth={2} />
               </button>
             </div>
           ))}
@@ -184,8 +354,16 @@ function StoryManager() {
       )}
 
       <p className="text-[10px] mt-3" style={{ color: "#C4BFB4" }}>
-        {images.length} photo{images.length !== 1 ? "s" : ""} · Customers tap the logo to view
+        {images.length} photo{images.length !== 1 ? "s" : ""} · Tap a photo to add a caption tag · Customers tap the logo to view
       </p>
+
+      {editingImage && (
+        <StoryTagEditor
+          image={editingImage}
+          onClose={() => setEditingImage(null)}
+          onSave={handleSaveTag}
+        />
+      )}
     </div>
   );
 }
