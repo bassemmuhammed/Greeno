@@ -92,8 +92,8 @@ function StoryViewer({ images, onClose }) {
       <button onClick={onClose} className="absolute top-10 right-4 z-10 p-2">
         <X className="w-6 h-6 text-white" />
       </button>
-      <div className="flex-1 relative flex items-center justify-center" style={{ backgroundColor: "#000" }}>
-        <img src={story.url} alt={`story-${current}`} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+      <div className="flex-1 relative" style={{ backgroundColor: "#000", overflow: "hidden" }}>
+        <img src={story.url} alt={`story-${current}`} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
 
         {/* Caption tag — position set by the owner from the dashboard */}
         {story.caption && (
@@ -108,8 +108,41 @@ function StoryViewer({ images, onClose }) {
               pointerEvents: "none",
             }}
           >
-            <div dir="rtl" style={{ backgroundColor: "rgba(0,0,0,0.55)", borderRadius: 14, padding: "10px 18px" }}>
-              <p style={{ color: "#fff", fontWeight: 800, fontSize: 16, fontFamily: "'Fraunces', serif", textAlign: "center", margin: 0, whiteSpace: "pre-wrap" }}>
+            {/* Modern tag matching the project's design system */}
+            <div
+              dir="rtl"
+              style={{
+                background: "linear-gradient(135deg, rgba(31,42,30,0.92) 0%, rgba(31,42,30,0.85) 100%)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                borderRadius: 18,
+                padding: "12px 20px",
+                border: "1px solid rgba(143,168,136,0.35)",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2)",
+              }}
+            >
+              {/* Decorative leaf accent */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 4 }}>
+                <div style={{ height: 1, flex: 1, background: "rgba(143,168,136,0.5)" }} />
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ color: "#8FA888" }}>
+                  <path d="M12 2C6 2 3 8 3 12c0 5 4 10 9 10 1-4 0-8-2-10 3 1 6 4 6 8 2-2 5-6 5-10C21 5 17 2 12 2z" fill="#8FA888" />
+                </svg>
+                <div style={{ height: 1, flex: 1, background: "rgba(143,168,136,0.5)" }} />
+              </div>
+              <p
+                style={{
+                  color: "#FAF7F0",
+                  fontWeight: 800,
+                  fontSize: 15,
+                  fontFamily: "'Fraunces', serif",
+                  textAlign: "center",
+                  margin: 0,
+                  whiteSpace: "pre-wrap",
+                  letterSpacing: "0.01em",
+                  lineHeight: 1.4,
+                  textShadow: "0 1px 4px rgba(0,0,0,0.5)",
+                }}
+              >
                 {story.caption}
               </p>
             </div>
