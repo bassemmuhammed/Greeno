@@ -4,20 +4,22 @@ export function useCart() {
   const [cart, setCart] = useState([]);
 
   const addToCart = (item, qty = 1) => {
+    // unique key = id + name (includes size label) + addons
+    const cartKey = `${item.id}__${item.name}__${(item.addons || []).join(",")}`;
     setCart((prev) => {
-      const existing = prev.find((c) => c.id === item.id);
+      const existing = prev.find((c) => c.cartKey === cartKey);
       if (existing) {
-        return prev.map((c) => c.id === item.id ? { ...c, qty: c.qty + qty } : c);
+        return prev.map((c) => c.cartKey === cartKey ? { ...c, qty: c.qty + qty } : c);
       }
-      return [...prev, { ...item, qty }];
+      return [...prev, { ...item, qty, cartKey }];
     });
   };
 
-  const inc = (id) => setCart((prev) => prev.map((c) => c.id === id ? { ...c, qty: c.qty + 1 } : c));
+  const inc = (cartKey) => setCart((prev) => prev.map((c) => c.cartKey === cartKey ? { ...c, qty: c.qty + 1 } : c));
 
-  const dec = (id) =>
+  const dec = (cartKey) =>
     setCart((prev) =>
-      prev.map((c) => c.id === id ? { ...c, qty: c.qty - 1 } : c).filter((c) => c.qty > 0)
+      prev.map((c) => c.cartKey === cartKey ? { ...c, qty: c.qty - 1 } : c).filter((c) => c.qty > 0)
     );
 
   const clear = () => setCart([]);

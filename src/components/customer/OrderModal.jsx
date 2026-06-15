@@ -113,7 +113,7 @@ export function OrderModal({
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     <button
-                      onClick={() => onDec(c.id)}
+                      onClick={() => onDec(c.cartKey)}
                       className="w-7 h-7 rounded-full flex items-center justify-center border"
                       style={{ borderColor: "#E4E0D4" }}
                     >
@@ -123,9 +123,9 @@ export function OrderModal({
                       {c.qty}
                     </span>
                     <button
-                      onClick={() => onInc(c.id)}
+                      onClick={() => onInc(c.cartKey)}
                       className="w-7 h-7 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: c.color }}
+                      style={{ backgroundColor: c.color || "#8FA888" }}
                     >
                       <Plus className="w-3 h-3 text-white" strokeWidth={2.5} />
                     </button>
