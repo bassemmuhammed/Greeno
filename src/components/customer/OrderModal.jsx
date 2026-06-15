@@ -4,7 +4,12 @@ import { RESTAURANT_CONFIG } from "../../data/menuData";
 
 function buildWhatsAppMessage(cart, phone, address, note, subtotal, fee, discount, total, restaurantName, promoCode) {
   let msg = `*New Order - ${restaurantName || RESTAURANT_CONFIG.name}*\n\n`;
-  cart.forEach((c) => { msg += `${c.qty}x ${c.name} - ${c.price * c.qty} EGP\n`; });
+  cart.forEach((c) => {
+    msg += `${c.qty}x ${c.name} - ${c.price * c.qty} EGP\n`;
+    if (c.addons && c.addons.length > 0) {
+      msg += `   ➕ Add-ons: ${c.addons.join(", ")}\n`;
+    }
+  });
   msg += `\n*Subtotal:* ${subtotal} EGP`;
   if (discount > 0) msg += `\n*Promo (${promoCode}):* -${discount} EGP`;
   msg += `\n*Delivery:* ${fee} EGP`;
@@ -109,7 +114,12 @@ export function OrderModal({
                     <p className="text-sm font-bold" style={{ color: "#1F2A1E", fontFamily: "'Fraunces', serif" }}>
                       {c.name}
                     </p>
-                    <p className="text-xs" style={{ color: "#A39B86" }}>{c.price} EGP</p>
+                    {c.addons && c.addons.length > 0 && (
+                      <p className="text-xs mt-0.5" style={{ color: "#8FA888" }}>
+                        ➕ {c.addons.join(", ")}
+                      </p>
+                    )}
+                    <p className="text-xs mt-0.5" style={{ color: "#A39B86" }}>{c.price} EGP</p>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     <button
