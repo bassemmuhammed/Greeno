@@ -15,37 +15,63 @@ import { supabase } from "../data/supabase";
 function StoryViewer({ images, onClose }) {
   const [current, setCurrent] = useState(0);
   const [progress, setProgress] = useState(0);
-  const timerRef = useRef(null);
-  const DURATION = 4000;
+  const timerRef   = useRef(null);
+  const elapsedRef = useRef(0);       // ms already consumed before a pause
+  const DURATION   = 4000;
+
+  // ── Hold to pause ──
+  const [isPaused, setIsPaused] = useState(false);
 
   // ── Swipe down to close ──
-  const [dragY, setDragY] = useState(0);
+  const [dragY, setDragY]       = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const startYRef = useRef(0);
+  const [isClosing, setIsClosing]   = useState(false);
+  const startYRef  = useRef(0);
+  const dragYRef   = useRef(0);       // shadow ref so onTouchEnd reads latest value
 
   const onTouchStart = (e) => {
     startYRef.current = e.touches[0].clientY;
     setIsDragging(true);
+    setIsPaused(true);
   };
   const onTouchMove = (e) => {
     const delta = e.touches[0].clientY - startYRef.current;
-    if (delta > 0) setDragY(delta);
+    if (delta > 0) {
+      dragYRef.current = delta;
+      setDragY(delta);
+    }
   };
   const onTouchEnd = () => {
     setIsDragging(false);
-    if (dragY > 100) {
-      setDragY(0);
-      onClose();
+    const dy = dragYRef.current;
+    if (dy > 90) {
+      // animate slide-down then close
+      setIsClosing(true);
+      setDragY(window.innerHeight);
+      setTimeout(() => onClose(), 220);
     } else {
+      // snap back, resume timer
+      dragYRef.current = 0;
       setDragY(0);
+      setIsPaused(false);
     }
   };
 
+  // ── Timer: pauses while finger is held ──
   useEffect(() => {
+    elapsedRef.current = 0;
     setProgress(0);
-    const start = Date.now();
+  }, [current]);
+
+  useEffect(() => {
+    if (isPaused || isClosing) {
+      clearInterval(timerRef.current);
+      return;
+    }
+    const start = Date.now() - elapsedRef.current;
     timerRef.current = setInterval(() => {
       const elapsed = Date.now() - start;
+      elapsedRef.current = elapsed;
       const pct = Math.min((elapsed / DURATION) * 100, 100);
       setProgress(pct);
       if (elapsed >= DURATION) {
@@ -55,13 +81,13 @@ function StoryViewer({ images, onClose }) {
       }
     }, 30);
     return () => clearInterval(timerRef.current);
-  }, [current]);
+  }, [current, isPaused, isClosing]);
 
   const prev = () => { if (current > 0) setCurrent((p) => p - 1); };
   const next = () => { if (current < images.length - 1) setCurrent((p) => p + 1); else onClose(); };
 
-  const dragOpacity = Math.max(1 - dragY / 350, 0);
-  const dragScale   = Math.max(1 - dragY / 900, 0.88);
+  const dragOpacity = isClosing ? 0 : Math.max(1 - dragY / 320, 0);
+  const dragScale   = isClosing ? 0.88 : Math.max(1 - dragY / 900, 0.88);
 
   // Current story object: { url, caption, tagX, tagY } — caption position
   // (tagX/tagY, in %) is set by the owner from the dashboard.
@@ -75,7 +101,7 @@ function StoryViewer({ images, onClose }) {
         touchAction: "none",
         transform: `translateY(${dragY}px) scale(${dragScale})`,
         opacity: dragOpacity,
-        transition: isDragging ? "none" : "transform 0.18s ease-out, opacity 0.18s ease-out",
+        transition: isDragging ? "none" : isClosing ? "transform 0.22s ease-in, opacity 0.22s ease-in" : "transform 0.18s ease-out, opacity 0.18s ease-out",
       }}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
