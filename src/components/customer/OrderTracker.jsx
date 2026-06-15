@@ -58,8 +58,7 @@ export function OrderTracker({ orderNumber, onClose, onDelivered }) {
           if (newStatus) {
             setStepIndex(STATUS_TO_STEP[newStatus] ?? 0);
             if (newStatus === "Delivered") {
-              // انتظر ثانيتين عشان العميل يشوف "Delivered" قبل ما تختفي
-              setTimeout(() => onDelivered?.(), 2000);
+              onDelivered?.();
             }
           }
         }

@@ -141,13 +141,18 @@ export function MenuItem({ item, onAdd, favorites, onToggleFav }) {
   const [showSheet, setShowSheet] = useState(false);
   const [addFlash, setAddFlash]   = useState(false);
 
+  // Sizes support: item.sizes = [{label:"Regular", price:175}, {label:"Large", price:230}]
+  const hasSizes = item.sizes && item.sizes.length > 1;
+  const [selectedSize, setSelectedSize] = useState(0); // index
+  const activePrice = hasSizes ? item.sizes[selectedSize].price : item.price;
+  const activeItem  = hasSizes ? { ...item, price: activePrice, name: `${item.name} (${item.sizes[selectedSize].label})` } : item;
+
   const isFav = favorites?.includes(item.id);
 
   const handleAdd = (e) => {
     e?.stopPropagation();
-    onAdd(item, qty);
+    onAdd(activeItem, qty);
     setQty(1);
-    // Flash animation
     setAddFlash(true);
     setTimeout(() => setAddFlash(false), 500);
   };
@@ -186,7 +191,7 @@ export function MenuItem({ item, onAdd, favorites, onToggleFav }) {
                 className="text-base font-bold shrink-0 tabular-nums"
                 style={{ color: "#1F2A1E", fontFamily: "'Fraunces', serif" }}
               >
-                {item.price} EGP
+                {activePrice} EGP
               </span>
             </div>
 
@@ -200,6 +205,30 @@ export function MenuItem({ item, onAdd, favorites, onToggleFav }) {
                 <NutrientStamp key={tag} icon={i === 0 ? Leaf : Droplet} label={tag} rotate={i % 2 === 0 ? 1 : -1.5} />
               ))}
             </div>
+
+            {/* ── Size Selector ── */}
+            {hasSizes && (
+              <div
+                className="flex gap-2 mt-3"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {item.sizes.map((s, idx) => (
+                  <button
+                    key={s.label}
+                    onClick={() => setSelectedSize(idx)}
+                    className="px-3 py-1 rounded-full text-xs font-bold transition-all"
+                    style={{
+                      backgroundColor: selectedSize === idx ? "#1F2A1E" : "transparent",
+                      color:           selectedSize === idx ? "#FAF7F0" : "#6B6557",
+                      border:          `1px solid ${selectedSize === idx ? "#1F2A1E" : "#E4E0D4"}`,
+                      fontFamily:      "'Fraunces', serif",
+                    }}
+                  >
+                    {s.label} — {s.price} EGP
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Item image thumbnail */}
@@ -259,7 +288,7 @@ export function MenuItem({ item, onAdd, favorites, onToggleFav }) {
 
       {showSheet && (
         <ItemDetailsSheet
-          item={item}
+          item={activeItem}
           onClose={() => setShowSheet(false)}
           onAdd={(itm, q) => { onAdd(itm, q); }}
           isFav={isFav}

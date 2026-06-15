@@ -371,11 +371,6 @@ export default function CustomerMenu() {
             <DailySpecialCard special={specialItem} onAdd={addToCart} />
           </div>
 
-          {/* ── Recently Ordered ── */}
-          {recentItems.length > 0 && (
-            <RecentlyOrderedBanner items={recentItems} onAdd={addToCart} />
-          )}
-
           {/* ── Search ── */}
           <div className="px-4 mb-3">
             <div className="flex items-center gap-2 px-4 py-3 rounded-full border" style={{ borderColor: "#E4E0D4", backgroundColor: "#FFFFFF" }}>
@@ -446,25 +441,26 @@ export default function CustomerMenu() {
           </div>
 
           {/* ── FAB Cart ── */}
-          <div className="fixed bottom-0 left-0 right-0 z-40 px-4 py-4" style={{ backgroundColor: "transparent", pointerEvents: "none" }}>
-            <div style={{ maxWidth: "100vw", margin: "0 auto", pointerEvents: "auto" }}>
-              <button
-                className="w-full py-4 rounded-2xl flex items-center justify-between px-5 transition-opacity"
-                style={{ backgroundColor: "#1F2A1E", opacity: totalItems === 0 ? 0.45 : 1, boxShadow: "0 4px 24px rgba(31,42,30,0.25)", pointerEvents: totalItems === 0 ? "none" : "auto" }}
-                onClick={() => setShowOrder(true)}
-                disabled={totalItems === 0}
-              >
-                <div className="flex items-center gap-2">
-                  <ShoppingBag className="w-4 h-4 text-white" strokeWidth={2} />
-                  <span className="text-sm font-bold text-white" style={{ fontFamily: "'Fraunces', serif" }}>View Order</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ backgroundColor: "#8FA888", color: "#1F2A1E" }}>{totalItems}</span>
-                  <span className="text-sm font-bold text-white tabular-nums">{totalPrice} EGP</span>
-                </div>
-              </button>
+          {totalItems > 0 && (
+            <div className="fixed bottom-0 left-0 right-0 z-40 px-4 py-4" style={{ backgroundColor: "transparent", pointerEvents: "none" }}>
+              <div style={{ maxWidth: "100vw", margin: "0 auto", pointerEvents: "auto" }}>
+                <button
+                  className="w-full py-4 rounded-2xl flex items-center justify-between px-5"
+                  style={{ backgroundColor: "#1F2A1E", boxShadow: "0 4px 24px rgba(31,42,30,0.25)" }}
+                  onClick={() => setShowOrder(true)}
+                >
+                  <div className="flex items-center gap-2">
+                    <ShoppingBag className="w-4 h-4 text-white" strokeWidth={2} />
+                    <span className="text-sm font-bold text-white" style={{ fontFamily: "'Fraunces', serif" }}>View Order</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ backgroundColor: "#8FA888", color: "#1F2A1E" }}>{totalItems}</span>
+                    <span className="text-sm font-bold text-white tabular-nums">{totalPrice} EGP</span>
+                  </div>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {showWelcome && <WelcomePromo onClose={() => setShowWelcome(false)} />}
