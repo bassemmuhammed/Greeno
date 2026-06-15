@@ -67,7 +67,7 @@ function StoryViewer({ images, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col"
+      className="fixed inset-0 z-50"
       style={{
         backgroundColor: "#000",
         touchAction: "none",
@@ -79,7 +79,33 @@ function StoryViewer({ images, onClose }) {
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      <div className="flex gap-1 px-3 pt-10 pb-2">
+      {/* Blurred background — fills entire screen */}
+      <div style={{
+        position: "absolute", inset: "-40px",
+        backgroundImage: `url(${story.url})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        filter: "blur(50px) brightness(0.22) saturate(1.8)",
+        zIndex: 0,
+      }} />
+
+      {/* Main image — centered in full screen */}
+      <img
+        src={story.url}
+        alt={`story-${current}`}
+        style={{
+          position: "absolute",
+          top: "50%", left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "100%",
+          height: "100%",
+          objectFit: "contain",
+          zIndex: 1,
+        }}
+      />
+
+      {/* Progress bars — overlaid on top */}
+      <div className="absolute top-0 left-0 right-0 flex gap-1 px-3 pt-12 pb-2" style={{ zIndex: 10 }}>
         {images.map((_, i) => (
           <div key={i} className="flex-1 h-0.5 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(255,255,255,0.3)" }}>
             <div
@@ -89,92 +115,68 @@ function StoryViewer({ images, onClose }) {
           </div>
         ))}
       </div>
-      <button onClick={onClose} className="absolute top-10 right-4 z-10 p-2">
+
+      {/* Close button */}
+      <button onClick={onClose} className="absolute right-4 z-20 p-2" style={{ top: "3.5rem" }}>
         <X className="w-6 h-6 text-white" />
       </button>
-      <div className="flex-1 relative" style={{ backgroundColor: "#111", overflow: "hidden" }}>
-        {/* Blurred bg using CSS filter on a pseudo-wrapper — no visible layer seam */}
-        <div style={{
-          position: "absolute", inset: "-40px",
-          backgroundImage: `url(${story.url})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          filter: "blur(50px) brightness(0.22) saturate(1.8)",
-        }} />
-        {/* Main image: always fully visible, centered */}
-        <img
-          src={story.url}
-          alt={`story-${current}`}
+
+      {/* Caption tag */}
+      {story.caption && (
+        <div
           style={{
             position: "absolute",
-            top: "50%", left: "50%",
+            left: `${story.tagX ?? 50}%`,
+            top: `${story.tagY ?? 88}%`,
             transform: "translate(-50%, -50%)",
-            width: "100%",
-            height: "auto",
-            maxHeight: "100%",
-            objectFit: "contain",
-            zIndex: 1,
+            maxWidth: "85%",
+            zIndex: 10,
+            pointerEvents: "none",
           }}
-        />
-
-        {/* Caption tag — position set by the owner from the dashboard */}
-        {story.caption && (
+        >
           <div
+            dir="rtl"
             style={{
-              position: "absolute",
-              left: `${story.tagX ?? 50}%`,
-              top: `${story.tagY ?? 88}%`,
-              transform: "translate(-50%, -50%)",
-              maxWidth: "85%",
-              zIndex: 10,
-              pointerEvents: "none",
+              background: "linear-gradient(135deg, rgba(31,42,30,0.92) 0%, rgba(31,42,30,0.85) 100%)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              borderRadius: 18,
+              padding: "12px 20px",
+              border: "1px solid rgba(143,168,136,0.35)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2)",
             }}
           >
-            {/* Modern tag matching the project's design system */}
-            <div
-              dir="rtl"
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 4 }}>
+              <div style={{ height: 1, flex: 1, background: "rgba(143,168,136,0.5)" }} />
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ color: "#8FA888" }}>
+                <path d="M12 2C6 2 3 8 3 12c0 5 4 10 9 10 1-4 0-8-2-10 3 1 6 4 6 8 2-2 5-6 5-10C21 5 17 2 12 2z" fill="#8FA888" />
+              </svg>
+              <div style={{ height: 1, flex: 1, background: "rgba(143,168,136,0.5)" }} />
+            </div>
+            <p
               style={{
-                background: "linear-gradient(135deg, rgba(31,42,30,0.92) 0%, rgba(31,42,30,0.85) 100%)",
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)",
-                borderRadius: 18,
-                padding: "12px 20px",
-                border: "1px solid rgba(143,168,136,0.35)",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2)",
+                color: "#FAF7F0",
+                fontWeight: 800,
+                fontSize: 15,
+                fontFamily: "'Fraunces', serif",
+                textAlign: "center",
+                margin: 0,
+                whiteSpace: "pre-wrap",
+                letterSpacing: "0.01em",
+                lineHeight: 1.4,
+                textShadow: "0 1px 4px rgba(0,0,0,0.5)",
               }}
             >
-              {/* Decorative leaf accent */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 4 }}>
-                <div style={{ height: 1, flex: 1, background: "rgba(143,168,136,0.5)" }} />
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ color: "#8FA888" }}>
-                  <path d="M12 2C6 2 3 8 3 12c0 5 4 10 9 10 1-4 0-8-2-10 3 1 6 4 6 8 2-2 5-6 5-10C21 5 17 2 12 2z" fill="#8FA888" />
-                </svg>
-                <div style={{ height: 1, flex: 1, background: "rgba(143,168,136,0.5)" }} />
-              </div>
-              <p
-                style={{
-                  color: "#FAF7F0",
-                  fontWeight: 800,
-                  fontSize: 15,
-                  fontFamily: "'Fraunces', serif",
-                  textAlign: "center",
-                  margin: 0,
-                  whiteSpace: "pre-wrap",
-                  letterSpacing: "0.01em",
-                  lineHeight: 1.4,
-                  textShadow: "0 1px 4px rgba(0,0,0,0.5)",
-                }}
-              >
-                {story.caption}
-              </p>
-            </div>
+              {story.caption}
+            </p>
           </div>
-        )}
-
-        <div className="absolute inset-0 flex">
-          <div className="flex-1" onClick={prev} />
-          <div className="flex-1" onClick={next} />
         </div>
+      )}
+
+      {/* Tap zones — left = prev, right = next */}
+      <div className="absolute inset-0 flex" style={{ zIndex: 5 }}>
+        <div className="flex-1" onClick={prev} style={{ cursor: "pointer" }} />
+        <div className="flex-1" onClick={next} style={{ cursor: "pointer" }} />
       </div>
     </div>
   );
